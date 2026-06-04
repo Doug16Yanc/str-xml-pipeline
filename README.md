@@ -1,210 +1,194 @@
-# STR-XML-PIPELINE: High-Throughput Interbank Settlement Architecture
+# STR-XML-PIPELINE
 
-An enterprise-grade, event-driven interbank settlement pipeline engineered for high-concurrency, low-latency transaction grouping, and automated structural XML generation compliant with Central Bank (**BACEN / STR**) standards.
+Enterprise-grade, event-driven interbank settlement pipeline engineered for high-throughput transaction grouping and automated XML generation compliant with **BACEN / STR** standards.
 
-Built using a strict **Hexagonal Architecture (Ports & Adapters)** pattern.
-
-The core processing engine leverages **Java 25** and **Project Loom Virtual Threads** to handle massive I/O-bound workloads asynchronously without blocking database connections or causing thread starvation.
+Built on **Hexagonal Architecture (Ports & Adapters)** with a stateless, cookie-based security model designed for institutional B2B access.
 
 ---
 
-# 🏗️ Architecture Overview
+## Architecture Overview
 
-The system is designed around decoupled architectural boundaries where the business domain remains completely isolated from framework-specific behaviors, infrastructure clients, and database protocols.
+The system enforces strict unidirectional dependencies: infrastructure adapts to domain contracts, never the inverse. The business domain is completely isolated from framework behavior, database protocols, and external clients.
 
-<img width="1672" height="941" alt="Image" src="https://github.com/user-attachments/assets/ed3753f4-8738-43b3-af04-227fee461c80" />
+![Architecture](https://github.com/user-attachments/assets/ed3753f4-8738-43b3-af04-227fee461c80)
 
-## Architectural Stack Highlights
+---
+
+## Stack
 
 ### Core Engine
-- Kotlin 2.2
-- Java 25
+- Kotlin 2.2 on Java 25
 - Spring Boot 4
+- Project Loom Virtual Threads: non-blocking I/O at scale without thread starvation
 
-### Concurrency Model
-- Active utilization of **Virtual Threads**
-- Lightweight, non-blocking stream consumption
-- Parallel processing with minimal resource overhead
+### Inbound Layer
+- Kafka consumers with micro-batch processing and localized partitioning
+- REST API secured as OAuth2 Resource Server with HTTP-only cookie transport
 
-### Inbound (Driving) Layer
-- Reactive Kafka Consumers
-- Micro-batch processing
-- Localized partitioning strategy
-- OAuth2 Resource Server secured REST API
+### Domain
+- Pure Kotlin domain entities with structural invariants enforced in `init` blocks
+- JAXB 4 for deterministic XML serialization
+- Value objects for `Ispb`, `S3Key`, `SettlementWindow`, and `OperatorName`
+- Sealed class state machines for `OrderStatus` and `BatchStatus`
 
-### Domain & Security
-- Pure POJO/Kotlin domain entities
-- Structural invariant validation through `init` blocks
-- JAXB 4 XML serialization
-- Argon2id hashing via Bouncy Castle
+### Security
+- JWT issued and transported exclusively via **HTTP-only `Secure` cookies**, no `Authorization` header, no token exposure to JavaScript
+- **Argon2id** password hashing via Bouncy Castle — memory-hard, resistant to GPU-based attacks
+- **Token blacklist in Redis** — logout invalidates the token server-side before expiry
+- Three institutional roles: `SETTLEMENT_OPERATOR`, `BACEN_AUDITOR`, `ADMIN`
+- Operator identity bound to ISPB via `OperatorName` convention (`{ispb}_{role_abbrev}_{seq}`), ownership enforced at the service layer via `AuthUtil`
+- `@PreAuthorize` at controller level + ISPB ownership check at service level
 
-### Outbound (Driven) Infrastructure
+### Infrastructure
 
-#### PostgreSQL 16
-- HikariCP connection pooling
-- `reWriteBatchedInserts=true`
-- Native PostgreSQL `COPY` support
-- Bulk transaction optimization
-
-#### Redis 7
-- Distributed idempotency filter
-- Duplicate event prevention
-- Low-latency lookups
-
-#### Amazon S3
-- Immutable XML artifact storage
-- Canonical persistence layer
-- Long-term archival
+| Component | Role |
+|---|---|
+| PostgreSQL 16 | Primary persistence — HikariCP, batch inserts, native `COPY` |
+| Redis 7 | Token blacklist + distributed idempotency filter |
+| Apache Kafka | Settlement event bus — windowed partitioning |
+| Amazon S3 | Immutable XML artifact storage and long-term archival |
 
 ---
 
-# ⚡ Core Design Patterns & Optimizations
+## Core Design Decisions
 
-## 1. Chronological Partitioning via `SettlementWindow`
+### 1. Chronological Partitioning via `SettlementWindow`
 
-To eliminate distributed row-lock contention during settlement aggregation, the system uses a custom value object:
+`SettlementWindow` is a value object that encodes the settlement cycle as a canonical partition key:
 
-```text
-SYSTEM-CYCLE-HHhMM
+```
+{SYSTEM}-{CYCLE}-{HH}h{MM}    →    STR-D1-07h30
 ```
 
-represented by:
+All orders belonging to the same window are routed to the same Kafka partition. Temporal ordering is guaranteed by Kafka — no distributed locks required, Virtual Threads process concurrently without contention.
 
-```java
-SettlementWindow
-```
+### 2. Two-Layer Idempotency
 
-This object acts as the Kafka Partition Key.
+**Redis layer** — rejects duplicate HTTP requests in milliseconds using a payload hash. Prevents double-submission from API clients before any domain logic runs.
 
-### Benefits
+**Domain layer** — every generated XML file carries a `checksumSha256`. Before upload, the checksum is verified against both Redis and the database. If the consumer crashes and redelivers, the pipeline detects the duplicate and short-circuits without creating a ghost record in S3.
 
-- Transactions belonging to the same settlement cycle are routed to the same Kafka partition.
-- Ordering is guaranteed by Kafka.
-- Virtual Threads can process records concurrently without race conditions.
-- No distributed locking is required.
+### 3. Bulk Persistence via PostgreSQL `COPY`
 
----
-
-## 2. High-Throughput JDBC Batching
-
-The persistence layer relies on optimized JDBC batch execution.
-
-With:
+High-volume order ingestion uses the PostgreSQL `COPY` protocol via `CopyManager`, bypassing the ORM entirely. Status transitions on thousands of orders use `@Modifying` bulk JPQL updates rather than per-entity `save()` calls.
 
 ```properties
 reWriteBatchedInserts=true
 ```
 
-the PostgreSQL driver automatically transforms sequential inserts into bulk operations.
+Further transforms sequential inserts into multi-row `VALUES` statements at the driver level.
 
-### Example
+### 4. Raw Payload Audit Trail
 
-Instead of:
+Every XML return received from BACEN/STR is persisted in `raw_settlement_return` before any parsing occurs, in a dedicated `REQUIRES_NEW` transaction. The audit record survives processing failures and rollbacks. `batch_id` is populated after successful parsing — a `NULL` value signals a parse failure requiring manual inspection.
 
-```sql
-INSERT INTO settlement_order (...) VALUES (...);
-INSERT INTO settlement_order (...) VALUES (...);
-INSERT INTO settlement_order (...) VALUES (...);
-```
+### 5. `SettlementWindow` Cutoff Enforcement
 
-the driver generates:
-
-```sql
-INSERT INTO settlement_order (...)
-VALUES
-(...),
-(...),
-(...);
-```
-
-### Benefits
-
-- Reduced network round-trips
-- Lower database CPU utilization
-- Throughput close to native bulk loading mechanisms
+The domain validates the current instant against the window cutoff before any I/O. Orders that miss their window are marked `REJECTED_CUTOFF` — distinguishable in audit from BACEN rejections. The `Clock` bean is injected, making cutoff validation fully deterministic in tests via `Clock.fixed(...)`.
 
 ---
 
-## 3. Strict Idempotency Anchor
+## Security Model
 
-Every generated XML file receives a unique:
+### Authentication Flow
 
-```text
-checksumSha256
+```
+POST /v1/auth/login
+  → credentials validated (Argon2id)
+  → JWT issued
+  → set-cookie: jwt=<token>; HttpOnly; Secure; SameSite=Strict
 ```
 
-Before persisting the file into Amazon S3:
+```
+POST /v1/auth/logout
+  → token extracted from cookie
+  → token added to Redis blacklist (TTL = remaining JWT expiry)
+  → cookie cleared
+```
 
-1. The checksum is validated against Redis.
-2. Duplicate payloads are rejected.
-3. Only unique files are stored.
+### Role Matrix
 
-This guarantees safe **at-least-once delivery semantics** without generating duplicate XML artifacts.
+| Endpoint | SETTLEMENT_OPERATOR | BACEN_AUDITOR | ADMIN |
+|---|:---:|:---:|:---:|
+| `POST /v1/orders` | ✓ | — | — |
+| `GET /v1/orders/**` | ✓ | ✓ | ✓ |
+| `GET /v1/batches/**` | ✓ | ✓ | ✓ |
+| `GET /v1/returns/**` | ✓ | ✓ | ✓ |
+| `GET /v1/files/**` | ✓ | ✓ | ✓ |
+| `GET /v1/files/{id}/download` | — | ✓ | ✓ |
+| `GET /v1/files/checksum/**` | — | ✓ | ✓ |
+| `POST /v1/participants` | — | — | ✓ |
+| `PUT /v1/participants/**` | — | — | ✓ |
+
+`SETTLEMENT_OPERATOR` is additionally restricted by ISPB ownership — an operator can only submit orders where `originator.ispb` matches the ISPB embedded in their `OperatorName`.
+
+### Operator Naming Convention
+
+```
+{ispb}_{role_abbrev}_{seq}    →    60746948_op_01
+```
+
+The ISPB prefix makes institutional ownership auditable at a glance and enables queries like `WHERE name LIKE '60746948_%'` without joins.
 
 ---
 
-# 🗂️ Domain-Driven Directory Layout
+## Domain Directory Layout
 
-The codebase enforces unidirectional dependencies where infrastructure adapts to domain contracts.
-
-```text
-br.com.xmlemission
+```
+tech.strxmlpipeline
 ├── domain
 │   ├── model
-│   │   ├── FileBatch
-│   │   ├── SettlementOrder
-│   │   ├── Ispb
-│   │   └── S3Key
-│   │
-│   └── port
-│       ├── in
-│       │   ├── FileBatchEmissionUseCase
-│       │   └── ProcessSettlementResponseUseCase
-│       │
-│       └── out
-│           ├── FileBatchPort
-│           ├── XmlFilePort
-│           └── KafkaFileBatchPort
+│   │   ├── FileBatch, BatchStatus
+│   │   ├── SettlementOrder, OrderStatus, OrderType
+│   │   ├── SettlementReturn, ReturnResult, RejectionReason
+│   │   ├── XmlFile
+│   │   ├── Participant
+│   │   ├── Ispb, S3Key, SettlementWindow, OperatorName
+│   │   └── User, Role
+│   ├── port
+│   │   ├── in  — FileBatchEmissionUseCase, AssembleFileBatchUseCase, ProcessSettlementReturnUseCase
+│   │   └── out — FileBatchPort, SettlementOrderPort, XmlFilePort, ParticipantPort,
+│   │              SettlementReturnPort, FileBatchPublisherPort, XmlGeneratorPort,
+│   │              XmlFileStoragePort
+│   └── exception
+│       └── domain-scoped typed exceptions
 │
-└── infra
-    ├── adapter
-    │   ├── PostgresRepository
-    │   └── S3ClientAdapter
-    │
-    ├── config
-    │   ├── VirtualThreadsConfig
-    │   ├── SecurityConfig
-    │   └── KafkaConfig
-    │
-    └── entity
-        ├── ORM Entities
-        └── DTOs
+└── infrastructure
+|   ├── persistence
+|       ├── adapter      — JPA persistence adapters, S3 storage, COPY bulk adapter
+|       ├── config       — KafkaConfig, AwsS3Config, AppConfig (Clock, Jackson)
+|       ├── entity       — JPA entities, Flyway migrations V1–V2
+|       ├── messaging    — FileBatchEmissionProducer, FileBatchEmissionConsumer,
+|       │                  SettlementReturnConsumer, StrReturnXmlParser
+|       ├── repository   — Spring Data repositories with bulk JPQL operations
+|       ├── security     — JWT filter, AuthUtil, token blacklist
+|       └── service      — JaxbXmlGeneratorService, S3StorageService,
+|                          RawReturnPersistenceService
+└── web
+    ├── controller
+    ├── dto
+        ├── auth
+        ├── request
+        ├── response
 ```
 
 ---
 
-# 🛠️ Local Development Environment
+## Local Development
 
-The complete infrastructure can be emulated locally through Docker Compose.
+### Prerequisites
 
-## Prerequisites
-
-- Docker
-- Docker Compose V2
+- Docker and Docker Compose V2
 - Java 25 (Eclipse Temurin recommended)
-- Maven 3.9+
+- Gradle 8+
 
----
-
-## 1. Environment Setup
-
-Create a `.env` file in the project root.
+### Environment Setup
 
 ```env
-SPRING_PROFILES_ACTIVE=prod
+# .env
+SPRING_PROFILES_ACTIVE=
 
 SERVER_PORT=
-
 DB_PORT=
 DB_NAME=
 DB_USER=
@@ -223,53 +207,24 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_S3_BUCKET_NAME=
 
-JWT_SECRET_KEY=
+JWT_SECRET=
 ```
 
----
-
-## 2. Launching the Cluster
-
-Start the complete ecosystem:
-
-- PostgreSQL
-- Redis
-- Kafka (KRaft)
-- Floci AWS Emulator
-- Kafka UI
-- STR-XML-PIPELINE
+### Start the Cluster
 
 ```bash
 docker compose --env-file .env up --build -d
 ```
 
----
-
-## 3. Local Service Endpoints
-
-### Application API
-
-```text
-http://localhost:8080/v1
-```
-
-### Kafka UI
-
-```text
-http://localhost:8081
-```
-
-### Local S3 Endpoint
-
-```text
-http://localhost:4566
-```
+| Service | Endpoint |
+|---|---|
+| Application API | `http://localhost:8080/v1` |
+| Kafka UI | `http://localhost:8081` |
+| LocalStack S3 | `http://localhost:4566` |
 
 ---
 
-# 🐳 Production JVM Tuning (AWS Fargate Optimized)
-
-The runtime container is packaged as a lightweight multi-stage image and configured specifically for high-throughput Virtual Thread workloads.
+## Production JVM Configuration (AWS Fargate)
 
 ```dockerfile
 ENV JAVA_OPTS="-server \
@@ -282,38 +237,10 @@ ENV JAVA_OPTS="-server \
                -Dfile.encoding=UTF-8"
 ```
 
-## JVM Configuration Rationale
-
-### `-XX:+UseG1GC`
-
-Optimized for workloads that frequently allocate and deallocate temporary XML buffers generated by JAXB.
-
-### `-XX:MaxRAMPercentage=75.0`
-
-Allows the JVM Heap to consume up to 75% of the container memory while preserving 25% for:
-
-- Native allocations
-- Socket buffers
-- Network I/O
-- TLS operations
-
-### `-XX:+ExitOnOutOfMemoryError`
-
-Forces immediate container termination when memory exhaustion occurs, allowing ECS/Fargate auto-healing policies to recreate healthy instances automatically.
+`G1GC` is selected for workloads that frequently allocate and discard temporary JAXB XML buffers. `MaxRAMPercentage=75.0` reserves 25% of container memory for native allocations, socket buffers, and TLS operations. `ExitOnOutOfMemoryError` enables ECS/Fargate auto-healing by forcing immediate container termination on memory exhaustion rather than degraded operation.
 
 ---
 
-# 🚀 Key Characteristics
+## Key Characteristics
 
-- Event-Driven Architecture
-- Hexagonal Architecture (Ports & Adapters)
-- Virtual Threads (Project Loom)
-- Kafka-Based Settlement Processing
-- PostgreSQL Batch Optimization
-- Redis Idempotency Layer
-- JAXB XML Generation
-- Amazon S3 Immutable Storage
-- OAuth2 Resource Server Security
-- AWS Fargate Ready
-- High Throughput & Low Latency
-- STR / BACEN Compliance-Oriented Design
+Event-Driven · Hexagonal Architecture · Virtual Threads (Project Loom) · Stateless JWT via HTTP-only Cookies · Argon2id · Redis Token Blacklist · Kafka Windowed Partitioning · PostgreSQL COPY · JAXB Deterministic XML · S3 Immutable Artifacts · STR/BACEN Compliance-Oriented · AWS Fargate Ready
