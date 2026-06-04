@@ -40,6 +40,13 @@ spring:
         order_by:
           default_batch_fetch_size: 64
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    out-of-order: false
+
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
@@ -52,41 +59,53 @@ spring:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      # StringSerializer — messages are JSON strings, not deserialized objects.
+      # JsonSerializer would add type headers that the consumer doesn't expect.
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
         retries: 2147483647
         compression.type: lz4
-
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      group-id: str-settlement-emission-group
+      # StringDeserializer — consumers parse JSON manually via ObjectMapper.
+      # JsonDeserializer requires type headers that the producer doesn't set.
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: ${kafka.consumer.group-id:str-settlement-emission-group}
       auto-offset-reset: earliest
       enable-auto-commit: false
       properties:
-        spring.json.trusted.packages: "br.com.xmlemission.domain.model,br.com.xmlemission.infra.entity"
-
+        isolation.level: read_committed
+        max.poll.records: 10
     listener:
       ack-mode: manual_immediate
       concurrency: 4
 
-logging:
-  level:
-    root: INFO
-    br.com.xmlemission: INFO
-    org.springframework.kafka: WARN
-    org.hibernate.SQL: WARN
+kafka:
+  consumer:
+    group-id: str-settlement-emission-group
+  topics:
+    batch-emission:
+      name: ${KAFKA_TOPIC_BATCH_EMISSION:str.batch.emission}
+      partitions: ${KAFKA_TOPIC_BATCH_EMISSION_PARTITIONS:12}
+    settlement-return:
+      name: ${KAFKA_TOPIC_SETTLEMENT_RETURN:str.settlement.return}
+      partitions: ${KAFKA_TOPIC_SETTLEMENT_RETURN_PARTITIONS:4}
 
 aws:
   s3:
-    endpoint: ${AWS_S3_ENDPOINT}
-    region: ${AWS_REGION}
+    endpoint: ${AWS_S3_ENDPOINT:}
+    region: ${AWS_REGION:sa-east-1}
     access-key-id: ${AWS_ACCESS_KEY_ID}
     secret-access-key: ${AWS_SECRET_ACCESS_KEY}
-    bucket-name: ${AWS_S3_BUCKET_NAME}
+    bucket: ${AWS_S3_BUCKET_NAME:str-xml-pipeline}
+
+str:
+  xsd:
+    path: classpath:xsd/str-settlement-2.0.xsd
+    version: "2.0"
 
 security:
   jwt:
@@ -101,3 +120,12 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+
+logging:
+  level:
+    root: INFO
+    tech.strxmlpipeline: INFO
+    org.springframework.kafka: WARN
+    org.hibernate.SQL: WARN
+    com.amazonaws: WARN
+    software.amazon.awssdk: WARN
