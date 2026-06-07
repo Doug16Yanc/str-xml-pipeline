@@ -34,3 +34,10 @@ build/
 
 ### Environment ###
 .env
+
+# Chaves criptográficas — NUNCA versionar
+src/main/resources/keys/
+*.pem
+*.key
+*.p12
+*.jks

@@ -107,10 +107,23 @@ str:
     path: classpath:xsd/str-settlement-2.0.xsd
     version: "2.0"
 
+jwt:
+  private-key-path: ${JWT_PRIVATE_KEY_PATH}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH}
+  access-token-expiry-ms: ${JWT_ACCESS_EXPIRY_MS:900000}
+
 security:
-  jwt:
-    secret: ${JWT_SECRET:super_secure_and_very_long_jwt_secret_key_for_signature_verification_32_bytes_min}
-    expiration-ms: 3600000
+  rate-limit:
+    login-capacity: ${RATE_LIMIT_LOGIN_CAPACITY:5}
+    login-refill-tokens: ${RATE_LIMIT_LOGIN_REFILL_TOKENS:5}
+    login-refill-seconds: ${RATE_LIMIT_LOGIN_REFILL_SECONDS:60}
+    register-capacity: ${RATE_LIMIT_REGISTER_CAPACITY:3}
+    register-refill-tokens: ${RATE_LIMIT_REGISTER_REFILL_TOKENS:3}
+    register-refill-seconds: ${RATE_LIMIT_REGISTER_REFILL_SECONDS:3600}
+    refresh-capacity: ${RATE_LIMIT_REFRESH_CAPACITY:10}
+    refresh-refill-tokens: ${RATE_LIMIT_REFRESH_REFILL_TOKENS:10}
+    refresh-refill-seconds: ${RATE_LIMIT_REFRESH_REFILL_SECONDS:60}
+    bucket-cache-cleanup-minutes: ${RATE_LIMIT_CACHE_CLEANUP_MINUTES:10}
 
 management:
   endpoints:
