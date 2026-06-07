@@ -13,6 +13,7 @@ data class SettlementWindow(
     val cycle: String,
     val time: LocalTime,
 ) {
+    // Mantido apenas a propriedade calculada (removido o campo duplicado do construtor)
     val partitioningKey: String
         get() = "$system-$cycle-${time.hour.toString().padStart(2, '0')}h${time.minute.toString().padStart(2, '0')}"
 
@@ -24,7 +25,9 @@ data class SettlementWindow(
         fun parse(value: String): SettlementWindow {
             val match = FORMAT.matchEntire(value)
                 ?: throw IllegalArgumentException("Invalid window format: '$value'. Expected: SYSTEM-CYCLE-HHhMM")
+
             val (system, cycle, hour, minute) = match.destructured
+
             return SettlementWindow(
                 system = system,
                 cycle = cycle,
