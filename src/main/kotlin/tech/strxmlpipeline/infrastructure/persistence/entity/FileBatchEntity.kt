@@ -14,6 +14,7 @@ import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import tech.strxmlpipeline.domain.enum.BatchStatus
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -21,8 +22,9 @@ import java.util.UUID
 @Table(
     name = "file_batch",
     indexes = [
-        Index(name = "idx_file_batch_window_status", columnList = "window, status"),
-        Index(name = "idx_file_batch_participant", columnList = "participant_id")
+        Index(name = "idx_file_batch_window_status", columnList = "window_code, status"),
+        Index(name = "idx_file_batch_window_date",   columnList = "window_code, reference_date"),
+        Index(name = "idx_file_batch_participant",   columnList = "participant_id"),
     ]
 )
 class FileBatchEntity(
@@ -34,8 +36,11 @@ class FileBatchEntity(
     @JoinColumn(name = "participant_id", nullable = false, updatable = false)
     val participant: ParticipantEntity,
 
-    @Column(name = "window", length = 30, nullable = false, updatable = false)
+    @Column(name = "window_code", length = 30, nullable = false, updatable = false)
     val window: String,
+
+    @Column(name = "reference_date", nullable = false, updatable = false)
+    val referenceDate: LocalDate,
 
     @Column(name = "status", length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
@@ -51,8 +56,8 @@ class FileBatchEntity(
     val generatedAt: OffsetDateTime = OffsetDateTime.now(),
 
     @Column(name = "sent_at")
-    var sentAt: OffsetDateTime? = null
+    var sentAt: OffsetDateTime? = null,
 ) {
-    @OneToMany(mappedBy = "batch", fetch = FetchType.LAZY, cascade = [CascadeType.MERGE])
+    @OneToMany(mappedBy = "batch", fetch = FetchType.LAZY)
     val orders: MutableList<SettlementOrderEntity> = mutableListOf()
 }

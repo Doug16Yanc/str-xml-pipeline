@@ -3,8 +3,8 @@ package tech.strxmlpipeline.infrastructure.exception.local
 import tech.strxmlpipeline.domain.enum.RoleType
 import java.util.UUID
 
-class RoleNotFoundException(roleId: UUID) :
-        RuntimeException("Role not found for ID: $roleId")
+class RoleNotFoundException(identifier: Any) :
+    RuntimeException("Role not found for identifier: $identifier")
 
 class ParticipantNotFoundException(ispb: String) :
     RuntimeException("Participant not found for ISPB: $ispb")
@@ -18,5 +18,5 @@ class SettlementOrderNotFoundException(id: UUID) :
 class XmlFileNotFoundException(detail: String) :
     RuntimeException("XmlFile not found — $detail")
 
-class SettlementResponseNotFoundException(batchId: UUID) :
+class SettlementReturnNotFoundException(batchId: UUID) :
     RuntimeException("Settlement return not found for batch: $batchId")

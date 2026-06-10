@@ -1,18 +1,23 @@
 package tech.strxmlpipeline.infrastructure.persistence.mapper
 
-import tech.strxmlpipeline.domain.model.Ispb
 import tech.strxmlpipeline.domain.model.Participant
+import tech.strxmlpipeline.domain.valueobject.Ispb
 import tech.strxmlpipeline.infrastructure.persistence.entity.ParticipantEntity
 
-fun ParticipantEntity.toDomain(): Participant = Participant(
+fun ParticipantEntity.toParticipantDomain(): Participant = Participant(
+    id = this.id,
     ispb = Ispb(this.ispb),
     name = this.name,
-    account = null,
-    branch = null
+    type = this.type,
+    account = this.account,
+    branch = this.branch
 )
 
-fun Participant.toEntity(): ParticipantEntity = ParticipantEntity(
+fun Participant.toParticipantEntity(): ParticipantEntity = ParticipantEntity(
+    id = this.id,
     ispb = this.ispb.value,
     name = this.name,
-    type = "BANK"
+    type = this.type,
+    account = this.account,
+    branch = this.branch
 )

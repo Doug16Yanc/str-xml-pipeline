@@ -1,6 +1,6 @@
 package tech.strxmlpipeline.domain.enum
 
-enum class ResponseResult {
+enum class ReturnResult {
     ACCEPTED,
     REJECTED
 }

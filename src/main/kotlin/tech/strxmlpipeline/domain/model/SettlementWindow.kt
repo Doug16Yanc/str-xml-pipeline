@@ -1,6 +1,7 @@
 package tech.strxmlpipeline.domain.model
 
 import java.time.LocalTime
+import java.time.Clock
 
 /**
  * Value object representing a settlement window.
@@ -11,16 +12,32 @@ import java.time.LocalTime
 data class SettlementWindow(
     val system: String,
     val cycle: String,
-    val time: LocalTime,
+    val time: LocalTime
 ) {
-    // Mantido apenas a propriedade calculada (removido o campo duplicado do construtor)
     val partitioningKey: String
         get() = "$system-$cycle-${time.hour.toString().padStart(2, '0')}h${time.minute.toString().padStart(2, '0')}"
+
+    /**
+     * Validates whether the current instant is still within the window cutoff.
+     * Receives [clock] externally so the domain remains testable without mocking static time.
+     * The scheduler fires 5 minutes before cutoff — if this returns false, orders go to REJECTED_CUTOFF.
+     */
+    fun isOpen(clock: Clock): Boolean =
+        LocalTime.now(clock).isBefore(time)
 
     override fun toString(): String = partitioningKey
 
     companion object {
         private val FORMAT = Regex("""^([A-Z]+)-([A-Z0-9]+)-(\d{2})h(\d{2})$""")
+
+        fun current(clock: Clock = Clock.systemDefaultZone()): SettlementWindow {
+            val now = LocalTime.now(clock)
+            return SettlementWindow(
+                system = "STR",
+                cycle  = "D1",
+                time   = LocalTime.of(now.hour, now.minute),
+            )
+        }
 
         fun parse(value: String): SettlementWindow {
             val match = FORMAT.matchEntire(value)

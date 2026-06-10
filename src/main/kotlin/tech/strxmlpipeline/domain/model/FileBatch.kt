@@ -16,10 +16,33 @@ data class FileBatch(
     val createdAt: OffsetDateTime = OffsetDateTime.now(),
     val updatedAt: OffsetDateTime = OffsetDateTime.now(),
 ) {
+    companion object {
+        fun fromPersistence(
+            id: UUID,
+            window: SettlementWindow,
+            referenceDate: LocalDate,
+            status: BatchStatus,
+            createdAt: OffsetDateTime,
+            updatedAt: OffsetDateTime,
+        ): FileBatch = FileBatch(
+            id            = id,
+            window        = window,
+            referenceDate = referenceDate,
+            orders        = emptyList(),
+            status        = status,
+            createdAt     = createdAt,
+            updatedAt     = updatedAt,
+        )
+    }
+
     init {
-        require(orders.isNotEmpty()) { "Batch must contain at least one order" }
-        require(orders.all { it.status == OrderStatus.PENDING }) {
-            "All orders in the batch must be in PENDING status at the moment of grouping"
+        if (orders.isNotEmpty()) {
+            require(orders.all { it.status == OrderStatus.BATCHED }) {
+                "All orders must be in BATCHED status when assembled into a FileBatch"
+            }
+        }
+        require(orders.all { it.status == OrderStatus.BATCHED }) {
+            "All orders must be in BATCHED status when assembled into a FileBatch"
         }
     }
 

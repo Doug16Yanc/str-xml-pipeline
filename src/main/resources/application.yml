@@ -2,12 +2,25 @@ spring:
   application:
     name: str-xml-pipeline
 
+  docker:
+    compose:
+      enabled: true
+      file: docker-compose.yml
+      lifecycle-management: start_only
+      activated:
+        services:
+          - postgres
+          - redis
+          - kafka
+          - kafka-ui
+          - floci
+
   threads:
     virtual:
       enabled: true
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/str_settlement_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/str_pipeline}
     username: ${SPRING_DATASOURCE_USERNAME:pipeline_admin}
     password: ${SPRING_DATASOURCE_PASSWORD:secure_postgres_pass_130bits}
     driver-class-name: org.postgresql.Driver
@@ -59,8 +72,6 @@ spring:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      # StringSerializer — messages are JSON strings, not deserialized objects.
-      # JsonSerializer would add type headers that the consumer doesn't expect.
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       properties:
@@ -70,8 +81,6 @@ spring:
         compression.type: lz4
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      # StringDeserializer — consumers parse JSON manually via ObjectMapper.
-      # JsonDeserializer requires type headers that the producer doesn't set.
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       group-id: ${kafka.consumer.group-id:str-settlement-emission-group}
       auto-offset-reset: earliest
@@ -96,11 +105,11 @@ kafka:
 
 aws:
   s3:
-    endpoint: ${AWS_S3_ENDPOINT:}
-    region: ${AWS_REGION:sa-east-1}
-    access-key-id: ${AWS_ACCESS_KEY_ID}
-    secret-access-key: ${AWS_SECRET_ACCESS_KEY}
-    bucket: ${AWS_S3_BUCKET_NAME:str-xml-pipeline}
+    endpoint: ${AWS_S3_ENDPOINT:http://localhost:4566}
+    region: ${AWS_REGION:us-east-1}
+    access-key-id: ${AWS_ACCESS_KEY_ID:floci_access_key}
+    secret-access-key: ${AWS_SECRET_ACCESS_KEY:floci_secret_key}
+    bucket: ${AWS_S3_BUCKET_NAME:str-xml-storage-bucket}
 
 str:
   xsd:
@@ -137,8 +146,10 @@ management:
 logging:
   level:
     root: INFO
-    tech.strxmlpipeline: INFO
-    org.springframework.kafka: WARN
-    org.hibernate.SQL: WARN
-    com.amazonaws: WARN
-    software.amazon.awssdk: WARN
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    tech.strxmlpipeline: DEBUG
+    org.springframework.kafka: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.amazonaws: DEBUG
+    software.amazon.awssdk: DEBUG

@@ -19,11 +19,11 @@ import org.springframework.kafka.listener.ContainerProperties
 import org.springframework.kafka.listener.DefaultErrorHandler
 import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries
 import org.springframework.scheduling.annotation.EnableScheduling
+import tech.strxmlpipeline.infrastructure.exception.local.DuplicateSettlementReturnException
 import java.time.Clock
 import java.util.UUID
 
 @Configuration
-@EnableScheduling
 class KafkaConfig(
     @Value("\${spring.kafka.bootstrap-servers}") private val bootstrapServers: String,
     @Value("\${kafka.topics.batch-emission.name:str.batch.emission}")      private val emissionTopic: String,
@@ -31,6 +31,7 @@ class KafkaConfig(
     @Value("\${kafka.topics.settlement-return.name:str.settlement.return}") private val returnTopic: String,
     @Value("\${kafka.topics.settlement-return.partitions:4}")              private val returnPartitions: Int,
     @Value("\${kafka.consumer.group-id:str-xml-pipeline}")                 private val groupId: String,
+    private val clock: Clock
 ) {
 
     // ── Topics ────────────────────────────────────────────────────────────────
@@ -140,15 +141,12 @@ class KafkaConfig(
         }
 
         return ConcurrentKafkaListenerContainerFactory<String, String>().apply {
-            consumerFactory                              = this@KafkaConfig.consumerFactory()
-            containerProperties.ackMode                 = ContainerProperties.AckMode.MANUAL_IMMEDIATE
+            setConsumerFactory(this@KafkaConfig.consumerFactory())
+
+            containerProperties.ackMode = ContainerProperties.AckMode.MANUAL_IMMEDIATE
             setCommonErrorHandler(errorHandler)
             setConcurrency(2)
         }
     }
-
-    @Bean
-    fun clock(): Clock = Clock.systemDefaultZone()
 }
 
-class DuplicateSettlementReturnException(message: String, val batchId: UUID) : RuntimeException(message)

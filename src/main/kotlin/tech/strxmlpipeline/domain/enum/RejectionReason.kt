@@ -1,12 +1,12 @@
 package tech.strxmlpipeline.domain.enum
 
 enum class RejectionReason(val code: String, val description: String) {
-    INSUFFICIENT_FUNDS("001", "Insufficient funds in the reserve account"),
-    INACTIVE_PARTICIPANT("002", "Participant not cleared for settlement"),
-    INVALID_XSD("003", "XML document does not comply with the current XSD schema"),
-    WINDOW_CLOSED("004", "Settlement window closed"),
-    DUPLICATION("005", "Duplicate file detected by checksum evaluation"),
-    INTERNAL_STR_ERROR("999", "Internal STR error");
+    INSUFFICIENT_RESERVES("001", "Insufficient balance in reserve account"),
+    INACTIVE_PARTICIPANT("002", "Participant not enabled for settlement"),
+    INVALID_XSD("003", "XML document does not conform to active XSD"),
+    WINDOW_CLOSED("004", "Settlement window already closed"),
+    DUPLICATE_FILE("005", "Duplicate file detected by checksum"),
+    STR_INTERNAL_ERROR("999", "Internal STR error");
 
     companion object {
         fun fromCode(code: String): RejectionReason =
@@ -14,3 +14,4 @@ enum class RejectionReason(val code: String, val description: String) {
                 ?: throw IllegalArgumentException("Unknown rejection code: $code")
     }
 }
+

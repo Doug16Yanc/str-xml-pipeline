@@ -5,7 +5,6 @@ import tech.strxmlpipeline.domain.model.Role
 import java.util.UUID
 
 interface RoleRepositoryPort {
-    fun save(role: Role): Role
     fun findById(id: UUID): Role?
     fun findByType(type: RoleType): Role?
 }

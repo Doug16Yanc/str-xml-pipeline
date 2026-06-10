@@ -97,7 +97,7 @@ class SecurityConfig(
             maxAge = 3600L
         }
         return UrlBasedCorsConfigurationSource().apply {
-            registerCorsConfiguration("/api/**", config)
+            registerCorsConfiguration("/v1/**", config)
         }
     }
 

@@ -28,7 +28,7 @@ class JwtAuthenticationFilter(
         chain: FilterChain,
     ) {
         val token = request.cookies
-            ?.firstOrNull { it.name == "access_token" }
+            ?.firstOrNull { it.name == "jwt" }
             ?.value
 
         if (token != null) {
@@ -52,7 +52,7 @@ class JwtAuthenticationFilter(
                     val auth = UsernamePasswordAuthenticationToken(
                         userId,
                         null,
-                        listOf(SimpleGrantedAuthority("ROLE_${user.role.roleType}"))
+                        listOf(SimpleGrantedAuthority(user.role.roleType.name))
                     )
                     SecurityContextHolder.getContext().authentication = auth
                 }

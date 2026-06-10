@@ -78,26 +78,17 @@ services:
     ports:
       - "${AWS_S3_PORT}:4566"
     environment:
-      - SERVICES=s3
-      - AWS_DEFAULT_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      FLOCI_HOSTNAME: floci
+      FLOCI_STORAGE_MODE: hybrid
     volumes:
-      - floci_data:/data
-    entrypoint: >
-      sh -c "
-      /app/floci &
-      echo 'Waiting for Floci S3 API on port 4566...'
-      until curl -s http://localhost:4566 > /dev/null; do sleep 0.5; done
-      echo 'Creating S3 bucket: ${AWS_S3_BUCKET_NAME}'
-      aws --endpoint-url=http://localhost:4566 s3 mb s3://${AWS_S3_BUCKET_NAME} --region ${AWS_REGION}
-      wait"
+      - /var/run/docker.sock:/var/run/docker.sock
+      - floci_data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566"]
+      test: ["CMD-SHELL", "curl -f http://localhost:4566/_floci/health || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 15s
+      start_period: 10s
 
   app:
     build:

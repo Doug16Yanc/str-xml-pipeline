@@ -6,6 +6,8 @@ import io.jsonwebtoken.Jwts
 import org.springframework.stereotype.Component
 import tech.strxmlpipeline.domain.model.User
 import tech.strxmlpipeline.domain.port.out.TokenGeneratorPort
+import tech.strxmlpipeline.infrastructure.exception.local.InvalidTokenException
+import tech.strxmlpipeline.infrastructure.exception.local.TokenExpiredException
 import java.util.Date
 import java.util.UUID
 
@@ -20,8 +22,7 @@ class JwtTokenGeneratorAdapter(
         return Jwts.builder()
             .subject(user.id.toString())
             .claim("role", user.role.roleType)
-            .claim("ispb", user.ispb)
-            .claim("name", user.name.value)
+            .claim("name", user.name)
             .issuedAt(Date(now))
             .expiration(Date(now + props.accessTokenExpiryMs))
             .signWith(keyLoader.privateKey(), Jwts.SIG.ES384)

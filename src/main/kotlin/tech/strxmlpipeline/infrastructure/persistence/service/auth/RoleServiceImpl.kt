@@ -16,18 +16,4 @@ class RoleServiceImpl(
         return roleRepository.findByType(type)
             ?: throw RoleNotFoundException(type)
     }
-
-    override fun createRole(type: RoleType): Role {
-        val friendlyDescription = type.name
-            .lowercase()
-            .replace("_", " ")
-            .replaceFirstChar { it.uppercase() }
-
-        val newRole = Role(
-            roleType = type,
-            description = "$friendlyDescription profile on the system.",
-        )
-
-        return roleRepository.save(newRole)
-    }
 }

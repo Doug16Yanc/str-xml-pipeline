@@ -7,7 +7,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 data class SettlementOrder(
-    val id: UUID = UUID.randomUUID(),
+    var id: UUID = UUID.randomUUID(),
     val type: OrderType,
     val amount: BigDecimal,
     val settlementDate: LocalDate,
@@ -15,23 +15,35 @@ data class SettlementOrder(
     val destination: Participant,
     val endToEndId: String,
     val status: OrderStatus = OrderStatus.PENDING,
+    val batchId: UUID? = null,
     val createdAt: OffsetDateTime = OffsetDateTime.now(),
     val updatedAt: OffsetDateTime = OffsetDateTime.now(),
 ) {
     init {
-        require(amount > BigDecimal.ZERO) { "Order amount must be positive" }
-        require(originator.ispb != destination.ispb) { "Originator and destination cannot be the same participant" }
-        require(endToEndId.isNotBlank()) { "EndToEndId cannot be empty" }
+        require(amount > BigDecimal.ZERO) {
+            "Order amount must be positive"
+        }
+        require(originator.ispb != destination.ispb) {
+            "Internal settlement between same ISPB [${originator.ispb}] must not transit through STR — resolve via internal ledger"
+        }
+        require(endToEndId.isNotBlank()) {
+            "EndToEndId must not be blank"
+        }
+    }
+    fun batch(): SettlementOrder = transition(OrderStatus.BATCHED)
+    fun emit(): SettlementOrder = transition(OrderStatus.EMITTED)
+    fun confirm(): SettlementOrder = transition(OrderStatus.CONFIRMED)
+    fun reject(): SettlementOrder = transition(OrderStatus.REJECTED)
+    fun rejectCutoff(): SettlementOrder = transition(OrderStatus.REJECTED_CUTOFF)
+
+    fun associateWithBatch(batchId: UUID): SettlementOrder {
+        return copy(batchId = batchId, updatedAt = OffsetDateTime.now())
     }
 
-    fun accept(): SettlementOrder = transition(OrderStatus.ACCEPTED)
-    fun reject(): SettlementOrder = transition(OrderStatus.REJECTED)
-    fun emit(): SettlementOrder = transition(OrderStatus.EMITTED)
-
-    private fun transition(newStatus: OrderStatus): SettlementOrder {
-        check(status.canTransitionTo(newStatus)) {
-            "Invalid order transition: $status → $newStatus for order $id"
+    private fun transition(next: OrderStatus): SettlementOrder {
+        check(status.canTransitionTo(next)) {
+            "Invalid order transition: $status → $next [id=$id]"
         }
-        return copy(status = newStatus, updatedAt = OffsetDateTime.now())
+        return copy(status = next, updatedAt = OffsetDateTime.now())
     }
 }

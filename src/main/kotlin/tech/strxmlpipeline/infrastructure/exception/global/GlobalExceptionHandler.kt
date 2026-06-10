@@ -17,8 +17,9 @@ import tech.strxmlpipeline.infrastructure.exception.local.RoleNotFoundException
 import tech.strxmlpipeline.infrastructure.exception.local.S3DownloadException
 import tech.strxmlpipeline.infrastructure.exception.local.S3UploadException
 import tech.strxmlpipeline.infrastructure.exception.local.SettlementOrderNotFoundException
-import tech.strxmlpipeline.infrastructure.exception.local.SettlementResponseNotFoundException
+import tech.strxmlpipeline.infrastructure.exception.local.SettlementReturnNotFoundException
 import tech.strxmlpipeline.infrastructure.exception.local.StrReturnParseException
+import tech.strxmlpipeline.infrastructure.exception.local.TokenExpiredException
 import tech.strxmlpipeline.infrastructure.exception.local.UnauthorizedParticipantException
 import tech.strxmlpipeline.infrastructure.exception.local.UserAlreadyExistsException
 import tech.strxmlpipeline.infrastructure.exception.local.WindowCutoffExceededException
@@ -36,7 +37,7 @@ class GlobalExceptionHandler {
         FileBatchNotFoundException::class,
         SettlementOrderNotFoundException::class,
         XmlFileNotFoundException::class,
-        SettlementResponseNotFoundException::class,
+        SettlementReturnNotFoundException::class,
     )
     fun handleNotFound(ex: RuntimeException): ResponseEntity<ErrorResponse> =
         error(HttpStatus.NOT_FOUND, ex.message)
@@ -68,6 +69,13 @@ class GlobalExceptionHandler {
     )
     fun handleDomainViolation(ex: RuntimeException): ResponseEntity<ErrorResponse> =
         error(HttpStatus.UNPROCESSABLE_ENTITY, ex.message)
+
+    @ExceptionHandler(
+        TokenExpiredException::class
+    )
+    fun handleTokenExpired(ex: RuntimeException): ResponseEntity<ErrorResponse> {
+        return error(HttpStatus.FORBIDDEN, ex.message)
+    }
 
     @ExceptionHandler(
         S3UploadException::class,

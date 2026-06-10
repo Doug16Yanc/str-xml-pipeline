@@ -34,6 +34,7 @@ class RegisterUserService(
             name = command.name,
             passwordHash = passwordHasher.hash(command.password),
             role = role,
+            ispb = command.extractIspb()
         )
 
         return userPort.save(user).also {

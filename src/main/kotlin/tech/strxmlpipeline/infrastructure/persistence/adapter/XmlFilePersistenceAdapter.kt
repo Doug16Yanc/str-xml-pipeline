@@ -2,11 +2,11 @@ package tech.strxmlpipeline.infrastructure.persistence.adapter
 
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Component
-import tech.strxmlpipeline.domain.model.S3Key
 import tech.strxmlpipeline.domain.model.XmlFile
 import tech.strxmlpipeline.domain.port.out.XmlFilePort
-import tech.strxmlpipeline.infrastructure.persistence.mapper.toDomain
-import tech.strxmlpipeline.infrastructure.persistence.mapper.toEntity
+import tech.strxmlpipeline.domain.valueobject.S3Key
+import tech.strxmlpipeline.infrastructure.persistence.mapper.toXmlFileDomain
+import tech.strxmlpipeline.infrastructure.persistence.mapper.toXmlFileEntity
 import tech.strxmlpipeline.infrastructure.persistence.repository.XmlFileJpaRepository
 import java.util.UUID
 
@@ -17,23 +17,22 @@ class XmlFilePersistenceAdapter(
 ) : XmlFilePort {
 
     override fun save(file: XmlFile): XmlFile {
-        return fileJpaRepository.save(file.toEntity()).toDomain()
+        return fileJpaRepository.save(file.toXmlFileEntity()).toXmlFileDomain()
+    }
+
+    override fun findById(id: UUID): XmlFile? {
+        return fileJpaRepository.findById(id)
+            .map { it.toXmlFileDomain() }
+            .orElse(null)
+    }
+
+    override fun findByBatchId(batchId: UUID): XmlFile? {
+        return fileJpaRepository.findByBatchId(batchId)?.toXmlFileDomain()
     }
 
     override fun findByChecksum(checksumSha256: String): XmlFile? {
-        return fileJpaRepository.findByChecksumSha256(checksumSha256)?.toDomain()
+        return fileJpaRepository.findByChecksumSha256(checksumSha256)?.toXmlFileDomain()
     }
 
-    override fun findByBatch(batchId: UUID): XmlFile? {
-        return fileJpaRepository.findByBatchId(batchId)?.toDomain()
-    }
 
-    override fun upload(fileContent: ByteArray, s3Key: S3Key): S3Key {
-        println("Simulating physical upload to AWS S3: ${s3Key.value}")
-        return s3Key
-    }
-
-    override fun download(s3Key: S3Key): ByteArray {
-        return ByteArray(0)
-    }
 }

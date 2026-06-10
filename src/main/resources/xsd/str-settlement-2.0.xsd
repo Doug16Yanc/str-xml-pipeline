@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="StrSettlement">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="Header" type="HeaderType"/>
+                <xs:element name="Orders">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="Order" type="OrderType" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="HeaderType">
+        <xs:sequence>
+            <xs:element name="BatchId"       type="xs:string"/>
+            <xs:element name="Window"        type="xs:string"/>
+            <xs:element name="ReferenceDate" type="xs:date"/>
+            <xs:element name="TotalOrders"   type="xs:int"/>
+            <xs:element name="TotalAmount"   type="xs:decimal"/>
+            <xs:element name="GeneratedAt"   type="xs:string"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="OrderType">
+        <xs:sequence>
+            <xs:element name="Id"              type="xs:string"/>
+            <xs:element name="EndToEndId"      type="xs:string"/>
+            <xs:element name="OrderType"       type="xs:string"/>
+            <xs:element name="OriginatorIspb"  type="xs:string"/>
+            <xs:element name="DestinationIspb" type="xs:string"/>
+            <xs:element name="Amount"          type="xs:decimal"/>
+            <xs:element name="Currency"        type="xs:string"/>
+            <xs:element name="SettlementDate"  type="xs:date"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

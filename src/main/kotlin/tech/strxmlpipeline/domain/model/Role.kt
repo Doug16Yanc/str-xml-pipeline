@@ -1,5 +1,6 @@
 package tech.strxmlpipeline.domain.model
 
+import tech.strxmlpipeline.domain.enum.RoleType
 import java.util.UUID
 
 data class Role(

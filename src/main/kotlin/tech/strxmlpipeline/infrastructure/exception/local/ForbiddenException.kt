@@ -1,7 +1,10 @@
 package tech.strxmlpipeline.infrastructure.exception.local
 
-class UnauthorizedParticipantException(operatorIspb: String, originatorIspb: String) :
-    RuntimeException(
-        "Operator with ISPB [$operatorIspb] is not authorized " +
-                "to act on behalf of originator ISPB [$originatorIspb]"
+class UnauthorizedParticipantException : RuntimeException {
+
+    constructor(message: String) : super(message)
+
+    constructor(operatorIspb: String, originatorIspb: String) : super(
+        "Operator with ISPB [$operatorIspb] is not authorized to act on behalf of originator ISPB [$originatorIspb]"
     )
+}

@@ -4,13 +4,13 @@ import org.springframework.stereotype.Component
 import tech.strxmlpipeline.domain.model.Role
 import tech.strxmlpipeline.infrastructure.persistence.entity.RoleEntity
 
-fun RoleEntity.toDomain(): Role = Role(
+fun RoleEntity.toRoleDomain(): Role = Role(
     id = this.id,
     roleType = this.roleType,
     description = this.description
 )
 
-fun Role.toEntity(): RoleEntity = RoleEntity(
+fun Role.toRoleEntity(): RoleEntity = RoleEntity(
     id = this.id,
     roleType = this.roleType,
     description = this.description

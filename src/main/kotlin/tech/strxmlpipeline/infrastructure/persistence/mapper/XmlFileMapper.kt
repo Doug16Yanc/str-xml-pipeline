@@ -1,12 +1,12 @@
 package tech.strxmlpipeline.infrastructure.persistence.mapper
 
-import tech.strxmlpipeline.domain.model.S3Key
 import tech.strxmlpipeline.domain.model.XmlFile
+import tech.strxmlpipeline.domain.valueobject.S3Key
 import tech.strxmlpipeline.infrastructure.persistence.entity.XmlFileEntity
 
 import java.time.ZoneOffset
 
-fun XmlFileEntity.toDomain(): XmlFile = XmlFile(
+fun XmlFileEntity.toXmlFileDomain(): XmlFile = XmlFile(
     id = this.id,
     batchId = this.batchId,
     s3Key = S3Key(this.s3Key),
@@ -16,7 +16,7 @@ fun XmlFileEntity.toDomain(): XmlFile = XmlFile(
     generatedAt = this.emittedAt
 )
 
-fun XmlFile.toEntity(): XmlFileEntity = XmlFileEntity(
+fun XmlFile.toXmlFileEntity(): XmlFileEntity = XmlFileEntity(
     id = this.id,
     batchId = this.batchId,
     s3Bucket = "str-xml-storage-bucket",

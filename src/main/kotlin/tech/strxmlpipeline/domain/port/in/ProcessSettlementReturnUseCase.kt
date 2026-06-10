@@ -1,11 +1,11 @@
 package tech.strxmlpipeline.domain.port.`in`
 
-import tech.strxmlpipeline.domain.model.SettlementResponse
+import tech.strxmlpipeline.domain.model.SettlementReturn
 
-interface ProcessSettlementResponseUseCase {
+interface ProcessSettlementReturnUseCase {
     /**
      * Entry point for the BACEN/STR clearing response consumer.
      * Receives the raw response payload and executes the status transitions.
      */
-    fun process(response: SettlementResponse)
+    fun process(response: SettlementReturn)
 }

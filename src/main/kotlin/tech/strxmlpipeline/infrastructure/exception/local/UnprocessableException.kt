@@ -22,3 +22,4 @@ class EmptyBatchException :
 
 class InvalidBatchOrderStatusException(batchId: UUID) :
     RuntimeException("All orders must be in BATCHED status when assembled into FileBatch [$batchId]")
+

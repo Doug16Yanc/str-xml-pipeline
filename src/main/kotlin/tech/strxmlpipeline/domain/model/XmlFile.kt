@@ -1,5 +1,6 @@
 package tech.strxmlpipeline.domain.model
 
+import tech.strxmlpipeline.domain.valueobject.S3Key
 import java.time.OffsetDateTime
 import java.util.UUID
 

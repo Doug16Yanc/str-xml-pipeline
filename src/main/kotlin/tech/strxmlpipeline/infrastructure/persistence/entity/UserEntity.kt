@@ -8,6 +8,8 @@ import jakarta.persistence.Index
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcType
+import org.hibernate.type.descriptor.jdbc.CharJdbcType
 import java.time.Instant
 import java.util.UUID
 
@@ -32,6 +34,10 @@ class UserEntity(
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     val role: RoleEntity,
+
+    @Column(name = "ispb", columnDefinition = "char(8)", length = 8, nullable = true)
+    @JdbcType(CharJdbcType::class)
+    val ispb: String? = null,
 
     @Column(nullable = false, updatable = false)
     val createdAt: Instant = Instant.now()

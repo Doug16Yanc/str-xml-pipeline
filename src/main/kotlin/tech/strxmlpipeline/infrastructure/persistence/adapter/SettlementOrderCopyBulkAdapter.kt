@@ -22,28 +22,27 @@ class SettlementOrderCopyBulkAdapter(
 
         jdbcTemplate.execute { connection: Connection ->
             val baseConnection: BaseConnection = connection.unwrap(BaseConnection::class.java)
-
             val copyManager = CopyManager(baseConnection)
 
             val copySql = """
                 COPY settlement_order (
                     id, originator_id, destination_id, batch_id, order_type, 
                     amount, currency, settlement_date, status, created_at
-                ) FROM STDIN WITH (FORMAT csv, DELIMITER ',', FORCE_NULL(batch_id))
+                ) FROM STDIN WITH (FORMAT csv, DELIMITER ',', QUOTE '"', ESCAPE '"')
             """.trimIndent()
 
             val csvBuilder = StringBuilder()
 
             orders.forEach { order ->
                 csvBuilder.append(order.id).append(",")
-                csvBuilder.append(order.originator.ispb.value).append(",")
-                csvBuilder.append(order.destination.ispb.value).append(",")
+                csvBuilder.append(order.originator.id).append(",")
+                csvBuilder.append(order.destination.id).append(",")
                 csvBuilder.append(batchId).append(",")
                 csvBuilder.append(order.type.code).append(",")
                 csvBuilder.append(order.amount).append(",")
                 csvBuilder.append("BRL").append(",")
                 csvBuilder.append(order.settlementDate).append(",")
-                csvBuilder.append("BATCHED").append(",")
+                csvBuilder.append(order.status.name).append(",")
                 csvBuilder.append(order.createdAt).append("\n")
             }
 
@@ -52,6 +51,8 @@ class SettlementOrderCopyBulkAdapter(
             ByteArrayInputStream(bytes).use { inputStream ->
                 copyManager.copyIn(copySql, inputStream, 65536)
             }
+
+            null
         }
     }
 }
