@@ -8,9 +8,12 @@ import org.springframework.transaction.annotation.Transactional
 import tech.strxmlpipeline.domain.model.FileBatch
 import tech.strxmlpipeline.domain.model.SettlementWindow
 import tech.strxmlpipeline.domain.enum.BatchStatus
+import tech.strxmlpipeline.domain.enum.ParticipantType
+import tech.strxmlpipeline.domain.model.Participant
 import tech.strxmlpipeline.domain.port.`in`.AssembleFileBatchUseCase
 import tech.strxmlpipeline.domain.port.out.FileBatchPort
 import tech.strxmlpipeline.domain.port.out.FileBatchPublisherPort
+import tech.strxmlpipeline.domain.port.out.ParticipantPort
 import tech.strxmlpipeline.domain.port.out.SettlementOrderPort
 import java.time.Clock
 import java.time.LocalDate
@@ -20,8 +23,9 @@ class AssembleFileBatchServiceImpl(
     private val orderPort: SettlementOrderPort,
     private val batchPort: FileBatchPort,
     private val publisherPort: FileBatchPublisherPort,
+    private val participantPort: ParticipantPort,
     private val clock: Clock,
-    @PersistenceContext private val entityManager: EntityManager
+    @PersistenceContext private val entityManager: EntityManager,
 ) : AssembleFileBatchUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -33,51 +37,76 @@ class AssembleFileBatchServiceImpl(
 
         entityManager.clear()
 
-        val pendingOrders = orderPort.findPendingForWindow(window, today)
+        val participants = participantPort.findAll()
+            .filter { it.type != ParticipantType.BACEN }
 
-        if (pendingOrders.isEmpty()) {
-            log.info("No pending orders found for window [{}] on [{}]", windowKey, today)
+        if (participants.isEmpty()) {
+            log.info("No participants found for window [{}]", windowKey)
             return
         }
-        val pendingBatchedOrders = pendingOrders.map { it.batch() }
+
+        participants.forEach { participant ->
+            assembleForParticipant(window, today, participant)
+        }
+    }
+
+    private fun assembleForParticipant(
+        window: SettlementWindow,
+        today: LocalDate,
+        participant: Participant,
+    ) {
+        if (!window.isOpen(clock)) {
+            rejectPendingOrders(window, today, participant)
+            return
+        }
+
+        val pendingOrders = orderPort.findPendingForWindow(window, today, participant.ispb)
+
+        if (pendingOrders.isEmpty()) {
+            log.debug(
+                "No pending orders for participant [{}] window [{}]",
+                participant.ispb, window.partitioningKey,
+            )
+            return
+        }
+
+        val batchedOrders = pendingOrders.map { it.batch() }
 
         val batch = FileBatch(
             window        = window,
             referenceDate = today,
-            orders        = pendingBatchedOrders,
+            orders        = batchedOrders,
             status        = BatchStatus.PENDING,
+            participant   = participant,
         )
         val savedBatch = batchPort.save(batch)
 
-        val finalOrdersWithBatch = pendingBatchedOrders.map { order ->
-            order.associateWithBatch(savedBatch.id)
-        }
-        orderPort.updateStatusBatch(finalOrdersWithBatch)
+        val ordersWithBatch = batchedOrders.map { it.associateWithBatch(savedBatch.id) }
+        orderPort.updateStatusBatch(ordersWithBatch)
 
         entityManager.flush()
 
         publisherPort.publish(savedBatch)
 
         log.info(
-            "FileBatch [{}] assembled for window [{}] — {} orders, total amount: {}",
-            savedBatch.id, windowKey, savedBatch.totalOrders, savedBatch.totalAmount,
+            "FileBatch [{}] assembled — participant [{}] window [{}] — {} orders — total: {}",
+            savedBatch.id, participant.ispb, window.partitioningKey,
+            savedBatch.totalOrders, savedBatch.totalAmount,
         )
     }
 
-    /**
-     * When cutoff is exceeded, mark all still-pending orders as REJECTED_CUTOFF
-     * so the audit trail distinguishes internal rejection from BACEN rejection.
-     */
-    private fun rejectPendingOrders(window: SettlementWindow, date: LocalDate) {
-        val pending = orderPort.findPendingForWindow(window, date)
+    private fun rejectPendingOrders(
+        window: SettlementWindow,
+        date: LocalDate,
+        participant: Participant,
+    ) {
+        val pending = orderPort.findPendingForWindow(window, date, participant.ispb)
         if (pending.isEmpty()) return
-
         val rejected = pending.map { it.rejectCutoff() }
         orderPort.updateStatusBatch(rejected)
-
         log.warn(
-            "Marked {} orders as REJECTED_CUTOFF for window [{}]",
-            rejected.size, window.partitioningKey,
+            "Marked {} orders as REJECTED_CUTOFF — participant [{}] window [{}]",
+            rejected.size, participant.ispb, window.partitioningKey,
         )
     }
 }

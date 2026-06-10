@@ -28,7 +28,7 @@ class SettlementWindowScheduler(
 
     // STR D1 — first window of the day, 07h30 cutoff
     // Fires at 07h25 — 5 min buffer for order fetch + XML pre-validation
-    @Scheduled(cron = "0 53 22 * * MON-FRI", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 55 07 * * MON-FRI", zone = "America/Sao_Paulo")
     fun strD1Window0730() = trigger("STR-D1-17h00")
 
     // STR D1 — second window, 10h00 cutoff

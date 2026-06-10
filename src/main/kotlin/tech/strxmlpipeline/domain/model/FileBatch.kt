@@ -12,7 +12,9 @@ data class FileBatch(
     val window: SettlementWindow,
     val referenceDate: LocalDate,
     val orders: List<SettlementOrder>,
+    val totalOrdersOverride: Int? = null,
     val status: BatchStatus = BatchStatus.PENDING,
+    val participant: Participant,
     val createdAt: OffsetDateTime = OffsetDateTime.now(),
     val updatedAt: OffsetDateTime = OffsetDateTime.now(),
 ) {
@@ -21,7 +23,9 @@ data class FileBatch(
             id: UUID,
             window: SettlementWindow,
             referenceDate: LocalDate,
+            totalOrders: Int,
             status: BatchStatus,
+            participant: Participant,
             createdAt: OffsetDateTime,
             updatedAt: OffsetDateTime,
         ): FileBatch = FileBatch(
@@ -29,7 +33,9 @@ data class FileBatch(
             window        = window,
             referenceDate = referenceDate,
             orders        = emptyList(),
+            totalOrdersOverride = totalOrders,
             status        = status,
+            participant   = participant,
             createdAt     = createdAt,
             updatedAt     = updatedAt,
         )
@@ -46,8 +52,7 @@ data class FileBatch(
         }
     }
 
-    val totalOrders: Int get() = orders.size
-
+    val totalOrders: Int get() = totalOrdersOverride ?: orders.size
     val totalAmount: BigDecimal get() = orders.sumOf { it.amount }
 
     fun emit(): FileBatch = transition(BatchStatus.EMITTED)

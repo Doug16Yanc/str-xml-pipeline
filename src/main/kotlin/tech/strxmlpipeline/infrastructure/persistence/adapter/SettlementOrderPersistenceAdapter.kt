@@ -6,6 +6,7 @@ import tech.strxmlpipeline.domain.enum.OrderStatus
 import tech.strxmlpipeline.domain.model.SettlementOrder
 import tech.strxmlpipeline.domain.model.SettlementWindow
 import tech.strxmlpipeline.domain.port.out.SettlementOrderPort
+import tech.strxmlpipeline.domain.valueobject.Ispb
 import tech.strxmlpipeline.infrastructure.persistence.mapper.toSettlementOrderDomain
 import tech.strxmlpipeline.infrastructure.persistence.mapper.toSettlementOrderEntity
 import tech.strxmlpipeline.infrastructure.persistence.repository.SettlementOrderJpaRepository
@@ -37,10 +38,11 @@ class SettlementOrderPersistenceAdapter(
             .map { it.toSettlementOrderDomain() }
     }
 
-    override fun findPendingForWindow(window: SettlementWindow, date: LocalDate): List<SettlementOrder> {
+    override fun findPendingForWindow(window: SettlementWindow, date: LocalDate, ispb: Ispb): List<SettlementOrder> {
         return orderJpaRepository.findPendingOrdersForWindow(
             window = window.partitioningKey,
-            date = date
+            date = date,
+            participantIspb = ispb.value
         ).map { it.toSettlementOrderDomain() }
     }
 

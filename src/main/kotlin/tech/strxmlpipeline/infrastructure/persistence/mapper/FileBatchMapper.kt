@@ -10,7 +10,9 @@ fun FileBatchEntity.toFileBatchDomain(): FileBatch =
         id            = this.id,
         window        = SettlementWindow.parse(this.window),
         referenceDate = this.referenceDate,
+        totalOrders = this.totalOrders,
         status        = this.status,
+        participant   = this.participant.toParticipantDomain(),
         createdAt     = this.generatedAt,
         updatedAt     = this.sentAt ?: this.generatedAt,
     )
@@ -18,7 +20,7 @@ fun FileBatchEntity.toFileBatchDomain(): FileBatch =
 fun FileBatch.toFileBatchEntity(): FileBatchEntity {
     val batchEntity = FileBatchEntity(
         id = this.id,
-        participant = this.orders.first().originator.toParticipantEntity(),
+        participant = this.participant.toParticipantEntity(),
         window = this.window.partitioningKey,
         referenceDate = this.referenceDate,
         status = this.status,

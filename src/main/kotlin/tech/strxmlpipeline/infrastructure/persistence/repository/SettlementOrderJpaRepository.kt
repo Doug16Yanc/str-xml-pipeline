@@ -17,15 +17,20 @@ interface SettlementOrderJpaRepository : JpaRepository<SettlementOrderEntity, UU
     fun findByStatus(status: OrderStatus): List<SettlementOrderEntity>
 
     @Query("""
-        SELECT o FROM SettlementOrderEntity o 
-        WHERE o.status = tech.strxmlpipeline.domain.enum.OrderStatus.PENDING 
-        AND o.settlementDate = :date 
-        AND o.window = :window 
-        AND o.batch IS NULL
-    """)
+    SELECT o FROM SettlementOrderEntity o
+    JOIN FETCH o.originator
+    JOIN FETCH o.destination
+    WHERE o.status = tech.strxmlpipeline.domain.enum.OrderStatus.PENDING
+    AND o.settlementDate = :date
+    AND o.window = :window
+    AND o.originator.ispb = :participantIspb
+    AND o.batch IS NULL
+    ORDER BY o.createdAt ASC
+""")
     fun findPendingOrdersForWindow(
         @Param("window") window: String,
-        @Param("date") date: LocalDate
+        @Param("date") date: LocalDate,
+        @Param("participantIspb") participantIspb: String,
     ): List<SettlementOrderEntity>
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
