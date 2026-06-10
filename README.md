@@ -10,7 +10,7 @@ Built on **Hexagonal Architecture (Ports & Adapters)** with a stateless, cookie-
 
 The system enforces strict unidirectional dependencies: infrastructure adapts to domain contracts, never the inverse. The business domain is completely isolated from framework behavior, database protocols, and external clients.
 
-![Architecture](https://github.com/user-attachments/assets/ed3753f4-8738-43b3-af04-227fee461c80)
+![Architecture](https://github.com/user-attachments/assets/2de28a8d-1cfc-4b51-9328-227b4fa0192f)
 
 ---
 
