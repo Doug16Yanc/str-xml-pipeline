@@ -9,28 +9,28 @@ import java.time.LocalDate
 
 @XmlAccessorType(XmlAccessType.FIELD)
 data class StrSettlementOrderEntry(
-    @XmlElement(name = "Id")
+    @field:XmlElement(name = "Id", required = true)
     val id: String = "",
 
-    @XmlElement(name = "EndToEndId")
+    @field:XmlElement(name = "EndToEndId", required = true)
     val endToEndId: String = "",
 
-    @XmlElement(name = "OrderType")
+    @field:XmlElement(name = "OrderType", required = true)
     val orderType: String = "",
 
-    @XmlElement(name = "OriginatorIspb")
+    @field:XmlElement(name = "OriginatorIspb", required = true)
     val originatorIspb: String = "",
 
-    @XmlElement(name = "DestinationIspb")
+    @field:XmlElement(name = "DestinationIspb", required = true)
     val destinationIspb: String = "",
 
-    @XmlElement(name = "Amount")
+    @field:XmlElement(name = "Amount", required = true)
     val amount: BigDecimal = BigDecimal.ZERO,
 
-    @XmlElement(name = "Currency")
+    @field:XmlElement(name = "Currency", required = true)
     val currency: String = "BRL",
 
-    @XmlElement(name = "SettlementDate")
-    @XmlJavaTypeAdapter(LocalDateAdapter::class)
+    @field:XmlElement(name = "SettlementDate", required = true)
+    @field:XmlJavaTypeAdapter(LocalDateAdapter::class)
     val settlementDate: LocalDate = LocalDate.now(),
 )

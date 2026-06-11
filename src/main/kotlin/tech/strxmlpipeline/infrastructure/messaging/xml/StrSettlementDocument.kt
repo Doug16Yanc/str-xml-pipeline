@@ -9,10 +9,10 @@ import jakarta.xml.bind.annotation.XmlRootElement
 @XmlRootElement(name = "StrSettlement")
 @XmlAccessorType(XmlAccessType.FIELD)
 data class StrSettlementDocument(
-    @XmlElement(name = "Header", required = true)
+    @field:XmlElement(name = "Header", required = true)
     val header: StrSettlementHeader = StrSettlementHeader(),
 
-    @XmlElementWrapper(name = "Orders")
-    @XmlElement(name = "Order")
+    @field:XmlElementWrapper(name = "Orders", required = true)
+    @field:XmlElement(name = "Order", required = true)
     val orders: List<StrSettlementOrderEntry> = emptyList()
 )

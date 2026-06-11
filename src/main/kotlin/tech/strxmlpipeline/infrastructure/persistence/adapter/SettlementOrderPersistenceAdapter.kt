@@ -65,7 +65,6 @@ class SettlementOrderPersistenceAdapter(
 
         val ids = orders.map { it.id }
         val targetStatus = orders.first().status
-
         val batchId = orders.first().batchId
             ?: throw IllegalStateException("Cannot update batch status in database because batchId is missing in domain model")
 
@@ -75,7 +74,20 @@ class SettlementOrderPersistenceAdapter(
             batchId = batchId,
             now = OffsetDateTime.now()
         )
+        return orders
+    }
 
+    override fun updateStatusOnly(orders: List<SettlementOrder>): List<SettlementOrder> {
+        if (orders.isEmpty()) return emptyList()
+
+        val ids = orders.map { it.id }
+        val targetStatus = orders.first().status
+
+        orderJpaRepository.updateStatusForIds(
+            ids = ids,
+            status = targetStatus,
+            now = OffsetDateTime.now()
+        )
         return orders
     }
 

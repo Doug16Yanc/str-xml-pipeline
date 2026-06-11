@@ -10,23 +10,23 @@ import java.time.OffsetDateTime
 
 @XmlAccessorType(XmlAccessType.FIELD)
 data class StrSettlementHeader(
-    @XmlElement(name = "BatchId")
+    @field:XmlElement(name = "BatchId", required = true)
     val batchId: String = "",
 
-    @XmlElement(name = "Window")
+    @field:XmlElement(name = "Window", required = true)
     val window: String = "",
 
-    @XmlElement(name = "ReferenceDate")
-    @XmlJavaTypeAdapter(LocalDateAdapter::class)
+    @field:XmlElement(name = "ReferenceDate", required = true)
+    @field:XmlJavaTypeAdapter(LocalDateAdapter::class)
     val referenceDate: LocalDate = LocalDate.now(),
 
-    @XmlElement(name = "TotalOrders")
+    @field:XmlElement(name = "TotalOrders", required = true)
     val totalOrders: Int = 0,
 
-    @XmlElement(name = "TotalAmount")
+    @field:XmlElement(name = "TotalAmount", required = true)
     val totalAmount: BigDecimal = BigDecimal.ZERO,
 
-    @XmlElement(name = "GeneratedAt")
-    @XmlJavaTypeAdapter(LocalDateAdapter::class)
+    @field:XmlElement(name = "GeneratedAt", required = true)
+    @field:XmlJavaTypeAdapter(OffsetDateTimeAdapter::class)
     val generatedAt: OffsetDateTime = OffsetDateTime.now(),
 )

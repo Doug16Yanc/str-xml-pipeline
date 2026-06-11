@@ -20,13 +20,13 @@ class FileBatchPersistenceAdapter(
 
     override fun save(batch: FileBatch): FileBatch {
         val entity = batch.toFileBatchEntity()
-        return batchJpaRepository.save(entity).toFileBatchDomain()
+        batchJpaRepository.save(entity)
+        return batch
     }
 
-    override fun findById(id: UUID): FileBatch? {
-        return batchJpaRepository.findById(id)
-            .map { it.toFileBatchDomain() }
-            .orElse(null)    }
+    override fun findByIdWithOrders(id: UUID): FileBatch? {
+        return batchJpaRepository.findByIdWithOrders(id)?.toFileBatchDomain()
+    }
 
     override fun findByWindowAndDate(window: SettlementWindow, date: LocalDate): List<FileBatch> {
         return batchJpaRepository.findByWindowAndReferenceDate(
@@ -42,5 +42,13 @@ class FileBatchPersistenceAdapter(
         existing.status = BatchStatus.valueOf(batch.status.name)
 
         return batchJpaRepository.save(existing).toFileBatchDomain()
+    }
+
+    override fun existsActiveBatch(window: SettlementWindow, date: LocalDate, participantId: UUID): Boolean {
+        return batchJpaRepository.existsActiveBatchForWindowDateAndParticipant(
+            window = window.partitioningKey,
+            date = date,
+            participantId = participantId
+        )
     }
 }

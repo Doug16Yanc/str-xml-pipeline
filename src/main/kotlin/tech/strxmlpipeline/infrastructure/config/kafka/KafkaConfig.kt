@@ -46,7 +46,7 @@ class KafkaConfig(
     fun batchEmissionTopic(): NewTopic = TopicBuilder
         .name(emissionTopic)
         .partitions(emissionPartitions)
-        .replicas(3)
+        .replicas(1)
         .config("retention.ms", "${7 * 24 * 60 * 60 * 1000}") // 7 days
         .config("min.insync.replicas", "2")
         .build()
@@ -55,7 +55,7 @@ class KafkaConfig(
     fun settlementReturnTopic(): NewTopic = TopicBuilder
         .name(returnTopic)
         .partitions(returnPartitions)
-        .replicas(3)
+        .replicas(1)
         .config("retention.ms", "${30L * 24 * 60 * 60 * 1000}") // 30 days — audit retention
         .config("min.insync.replicas", "2")
         .build()
@@ -66,7 +66,7 @@ class KafkaConfig(
     fun batchEmissionDlt(): NewTopic = TopicBuilder
         .name("$emissionTopic.DLT")
         .partitions(emissionPartitions)
-        .replicas(3)
+        .replicas(1)
         .config("retention.ms", "${90L * 24 * 60 * 60 * 1000}") // 90 days
         .build()
 
@@ -74,7 +74,7 @@ class KafkaConfig(
     fun settlementReturnDlt(): NewTopic = TopicBuilder
         .name("$returnTopic.DLT")
         .partitions(returnPartitions)
-        .replicas(3)
+        .replicas(1)
         .config("retention.ms", "${90L * 24 * 60 * 60 * 1000}")
         .build()
 

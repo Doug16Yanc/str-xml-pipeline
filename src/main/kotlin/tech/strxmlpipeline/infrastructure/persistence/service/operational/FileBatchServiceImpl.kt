@@ -16,7 +16,7 @@ class FileBatchServiceImpl(
 ) {
 
     fun findById(id: UUID): FileBatch =
-        batchPort.findById(id)
+        batchPort.findByIdWithOrders(id)
             ?: throw FileBatchNotFoundException(id)
 
     fun findByWindowAndDate(windowKey: String, date: LocalDate): List<FileBatch> {

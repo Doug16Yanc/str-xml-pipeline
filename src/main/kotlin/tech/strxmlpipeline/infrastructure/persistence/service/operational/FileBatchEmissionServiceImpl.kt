@@ -1,4 +1,4 @@
-package tech.strxmlpipeline.application.usecase
+package tech.strxmlpipeline.infrastructure.persistence.service.operational
 
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -30,7 +30,7 @@ class FileBatchEmissionServiceImpl(
 
     @Transactional
     override fun emit(batchId: UUID) {
-        val batch = requireNotNull(batchPort.findById(batchId)) {
+        val batch = requireNotNull(batchPort.findByIdWithOrders(batchId)) {
             "FileBatch not found: $batchId"
         }
 

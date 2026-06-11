@@ -5,9 +5,14 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 class OffsetDateTimeAdapter : XmlAdapter<String, OffsetDateTime>() {
-    override fun marshal(v: OffsetDateTime?): String? =
-        v?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-    override fun unmarshal(v: String?): OffsetDateTime? =
-        v?.let { OffsetDateTime.parse(it, DateTimeFormatter.ISO_OFFSET_DATE_TIME) }
+    private val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+
+    override fun marshal(v: OffsetDateTime?): String? {
+        return v?.format(formatter)
+    }
+
+    override fun unmarshal(v: String?): OffsetDateTime? {
+        return v?.let { OffsetDateTime.parse(it, formatter) }
+    }
 }

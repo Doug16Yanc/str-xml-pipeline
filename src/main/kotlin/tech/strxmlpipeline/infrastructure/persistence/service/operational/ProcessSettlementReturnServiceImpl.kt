@@ -21,7 +21,7 @@ class ProcessSettlementReturnServiceImpl(
     private val log = LoggerFactory.getLogger(javaClass)
 
     override fun process(response: SettlementReturn) {
-        val batch = requireNotNull(batchPort.findById(response.batchId)) {
+        val batch = requireNotNull(batchPort.findByIdWithOrders(response.batchId)) {
             "FileBatch not found for return processing: ${response.batchId}"
         }
 

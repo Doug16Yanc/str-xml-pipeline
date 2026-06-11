@@ -14,6 +14,7 @@ fun SettlementOrderEntity.toSettlementOrderDomain(): SettlementOrder = Settlemen
     destination = this.destination.toParticipantDomain(),
     endToEndId = this.endToEndId,
     status = this.status,
+    batchId = this.batch?.id,
     createdAt = this.createdAt,
     updatedAt = this.updatedAt
 )

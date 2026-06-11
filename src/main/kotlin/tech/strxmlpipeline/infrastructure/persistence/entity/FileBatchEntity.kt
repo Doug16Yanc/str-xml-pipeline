@@ -25,7 +25,7 @@ import java.util.UUID
         Index(name = "idx_file_batch_window_status", columnList = "window_code, status"),
         Index(name = "idx_file_batch_window_date",   columnList = "window_code, reference_date"),
         Index(name = "idx_file_batch_participant",   columnList = "participant_id"),
-    ]
+        Index(name = "idx_file_batch_window_date_participant", columnList = "window_code, reference_date, participant_id"),    ]
 )
 class FileBatchEntity(
     @Id

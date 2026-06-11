@@ -9,7 +9,7 @@ import tech.strxmlpipeline.infrastructure.persistence.mapper.toParticipantDomain
 import tech.strxmlpipeline.infrastructure.persistence.mapper.toParticipantEntity
 
 @Component
-class ParticipantRepositoryAdapter(
+class ParticipantPersistenceAdapter(
     private val jpaRepository: ParticipantJpaRepository
 ) : ParticipantPort {
 

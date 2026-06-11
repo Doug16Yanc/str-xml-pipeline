@@ -35,8 +35,8 @@ class JaxbXmlGeneratorService(
 
     override fun generate(batch: FileBatch): ByteArray {
         val document = batch.toXmlDocument()
-
         val output = ByteArrayOutputStream()
+
         try {
             val marshaller = jaxbContext.createMarshaller().apply {
                 setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
@@ -45,8 +45,9 @@ class JaxbXmlGeneratorService(
             }
             marshaller.marshal(document, output)
         } catch (e: JAXBException) {
+            logJaxbDiagnostics(e)
             throw XmlGenerationException(
-                "Failed to generate XML for batch [${batch.id}]: ${e.message}"
+                "Failed to generate XML for batch [${batch.id}]: ${e.message ?: "Check diagnostics in logs"}"
             )
         }
 
@@ -56,6 +57,36 @@ class JaxbXmlGeneratorService(
             batch.id, batch.totalOrders, bytes.size,
         )
         return bytes
+    }
+
+    /**
+     * Extracts deep diagnostic details from JAXBExceptions, parsing linked exceptions
+     * and metadata specific to the JAXB Reference Implementation via reflection.
+     */
+    private fun logJaxbDiagnostics(exception: JAXBException) {
+        log.error("--- [JAXB ERROR DIAGNOSTIC START] ---")
+        log.error("Main JAXB Exception: ${exception.message}", exception)
+
+        var linkedEx = exception.linkedException
+        while (linkedEx != null) {
+            log.error("Linked Cause: ${linkedEx.message}", linkedEx)
+
+            if (linkedEx.javaClass.name == "com.sun.xml.bind.v2.runtime.IllegalAnnotationExceptions") {
+                try {
+                    val getErrorsMethod = linkedEx.javaClass.getMethod("getErrors")
+                    val errorsList = getErrorsMethod.invoke(linkedEx) as? List<*>
+                    errorsList?.forEach { annotationError ->
+                        val getMessageMethod = annotationError?.javaClass?.getMethod("toString")
+                        val errorMessage = getMessageMethod?.invoke(annotationError)
+                        log.error("[JAXB ANNOTATION ERROR DETAIL] -> $errorMessage")
+                    }
+                } catch (reflectionEx: Exception) {
+                    log.error("Failed to extract JAXB annotation errors via reflection: ${reflectionEx.message}")
+                }
+            }
+            linkedEx = try { linkedEx.cause } catch (_: Exception) { null }
+        }
+        log.error("--- [JAXB ERROR DIAGNOSTIC END] ---")
     }
 
     /**
@@ -78,14 +109,14 @@ class JaxbXmlGeneratorService(
             ),
             orders = sortedOrders.map { order ->
                 StrSettlementOrderEntry(
-                    id            = order.id.toString(),
-                    endToEndId    = order.endToEndId,
-                    orderType     = order.type.code,
-                    originatorIspb = order.originator.ispb.value,
+                    id              = order.id.toString(),
+                    endToEndId      = order.endToEndId,
+                    orderType       = order.type.code,
+                    originatorIspb  = order.originator.ispb.value,
                     destinationIspb = order.destination.ispb.value,
-                    amount        = order.amount,
-                    currency      = "BRL",
-                    settlementDate = order.settlementDate,
+                    amount          = order.amount,
+                    currency        = "BRL",
+                    settlementDate  = order.settlementDate,
                 )
             }
         )

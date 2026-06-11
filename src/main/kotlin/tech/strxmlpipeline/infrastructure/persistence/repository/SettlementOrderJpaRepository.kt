@@ -1,6 +1,8 @@
 package tech.strxmlpipeline.infrastructure.persistence.repository
 
+import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Lock
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.repository.query.Param
@@ -16,6 +18,7 @@ interface SettlementOrderJpaRepository : JpaRepository<SettlementOrderEntity, UU
 
     fun findByStatus(status: OrderStatus): List<SettlementOrderEntity>
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
     SELECT o FROM SettlementOrderEntity o
     JOIN FETCH o.originator
@@ -30,7 +33,7 @@ interface SettlementOrderJpaRepository : JpaRepository<SettlementOrderEntity, UU
     fun findPendingOrdersForWindow(
         @Param("window") window: String,
         @Param("date") date: LocalDate,
-        @Param("participantIspb") participantIspb: String,
+        @Param("participantIspb") participantIspb: String
     ): List<SettlementOrderEntity>
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -48,6 +51,18 @@ interface SettlementOrderJpaRepository : JpaRepository<SettlementOrderEntity, UU
         @Param("batchId") batchId: UUID,
         @Param("now") now: OffsetDateTime
     ): Int
+
+    @Modifying
+    @Query("""
+        UPDATE SettlementOrderEntity o 
+        SET o.status = :status, o.updatedAt = :now, o.version = o.version + 1
+        WHERE o.id IN :ids
+    """)
+    fun updateStatusForIds(
+        @Param("ids") ids: List<UUID>,
+        @Param("status") status: OrderStatus,
+        @Param("now") now: OffsetDateTime,
+    )
 
     fun findByBatchId(batchId: UUID): List<SettlementOrderEntity>
 }

@@ -12,6 +12,13 @@ import java.util.UUID
 interface FileBatchJpaRepository : JpaRepository<FileBatchEntity, UUID> {
 
     @Query("""
+        SELECT f FROM FileBatchEntity f 
+        LEFT JOIN FETCH f.orders 
+        WHERE f.id = :id
+    """)
+    fun findByIdWithOrders(@Param("id") id: UUID): FileBatchEntity?
+
+    @Query("""
         SELECT b FROM FileBatchEntity b
         WHERE b.window = :window
         AND b.referenceDate = :date
@@ -21,22 +28,19 @@ interface FileBatchJpaRepository : JpaRepository<FileBatchEntity, UUID> {
         @Param("date") date: LocalDate,
     ): List<FileBatchEntity>
 
-    /**
-     * Prevents duplicate active batches for the same window+date.
-     * Called by the scheduler before assembly to detect race conditions
-     * (e.g. double-fire due to clock skew or manual trigger).
-     */
     @Query("""
-        SELECT COUNT(b) > 0 FROM FileBatchEntity b
-        WHERE b.window = :window
-        AND b.referenceDate = :date
-        AND b.status NOT IN (
-            tech.strxmlpipeline.domain.enum.BatchStatus.REJECTED
-        )
-    """)
-    fun existsActiveBatchForWindowAndDate(
+    SELECT COUNT(b) > 0 FROM FileBatchEntity b
+    WHERE b.window = :window
+    AND b.referenceDate = :date
+    AND b.participant.id = :participantId
+    AND b.status NOT IN (
+        tech.strxmlpipeline.domain.enum.BatchStatus.REJECTED
+    )
+""")
+    fun existsActiveBatchForWindowDateAndParticipant(
         @Param("window") window: String,
         @Param("date") date: LocalDate,
+        @Param("participantId") participantId: UUID,
     ): Boolean
 
 }
