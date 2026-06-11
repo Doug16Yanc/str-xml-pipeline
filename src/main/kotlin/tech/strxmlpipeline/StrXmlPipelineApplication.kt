@@ -1,5 +1,6 @@
 package tech.strxmlpipeline
 
+import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.cache.annotation.EnableCaching
@@ -10,6 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling
 @EnableCaching
 @EnableScheduling
 @EnableRetry
+@EnableSchedulerLock(defaultLockAtMostFor = "PT4M")
 class StrXmlPipelineApplication
 
 fun main(args: Array<String>) {

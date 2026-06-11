@@ -5,9 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.kotlinModule
+import net.javacrumbs.shedlock.core.LockProvider
+import net.javacrumbs.shedlock.provider.redis.spring.RedisLockProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.data.redis.connection.RedisConnectionFactory
 import java.time.Clock
 
 @Configuration
@@ -19,6 +22,16 @@ class AppConfig {
      */
     @Bean
     fun clock(): Clock = Clock.systemDefaultZone()
+
+    /**
+     * Distributed scheduler lock.
+     * Ensures that scheduled tasks execute on only one node at a time,
+     * preventing duplicate XML generation, settlement processing, and
+     * reconciliation jobs in a clustered deployment.
+     */
+    @Bean
+    fun lockProvider(redisConnectionFactory: RedisConnectionFactory): LockProvider =
+        RedisLockProvider(redisConnectionFactory)
 
     /**
      * Explicit ObjectMapper — do not rely on Spring Boot auto-configuration

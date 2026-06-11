@@ -1,5 +1,6 @@
 package tech.strxmlpipeline.infrastructure.scheduler
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -29,18 +30,38 @@ class SettlementWindowScheduler(
     // STR D1 — first window of the day, 07h30 cutoff
     // Fires at 07h25 — 5 min buffer for order fetch + XML pre-validation
     @Scheduled(cron = "0 55 07 * * MON-FRI", zone = "America/Sao_Paulo")
+    @SchedulerLock(
+        name = "strD0Window1700",
+        lockAtMostFor = "PT4M",
+        lockAtLeastFor = "PT1M",
+    )
     fun strD1Window0730() = trigger("STR-D1-17h00")
 
     // STR D1 — second window, 10h00 cutoff
     @Scheduled(cron = "0 55 9 * * MON-FRI", zone = "America/Sao_Paulo")
+    @SchedulerLock(
+        name = "strD0Window1700",
+        lockAtMostFor = "PT4M",
+        lockAtLeastFor = "PT1M",
+    )
     fun strD1Window1000() = trigger("STR-D1-10h00")
 
     // STR D1 — third window, 14h00 cutoff
     @Scheduled(cron = "0 55 13 * * MON-FRI", zone = "America/Sao_Paulo")
+    @SchedulerLock(
+        name = "strD0Window1700",
+        lockAtMostFor = "PT4M",
+        lockAtLeastFor = "PT1M",
+    )
     fun strD1Window1400() = trigger("STR-D1-14h00")
 
     // STR D0 — same-day settlement, 17h00 cutoff
     @Scheduled(cron = "0 55 16 * * MON-FRI", zone = "America/Sao_Paulo")
+    @SchedulerLock(
+        name = "strD0Window1700",
+        lockAtMostFor = "PT4M",
+        lockAtLeastFor = "PT1M",
+    )
     fun strD0Window1700() = trigger("STR-D0-17h00")
 
     private fun trigger(windowKey: String) {
