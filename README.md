@@ -18,7 +18,7 @@ The system enforces strict unidirectional dependencies: infrastructure adapts to
 
 ### Core Engine
 - Kotlin 2.1 on Java 21
-- Spring Boot 3.5
+- Spring Boot 3.5.14
 - Project Loom Virtual Threads: non-blocking I/O at scale without thread starvation
 
 ### Inbound Layer
