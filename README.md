@@ -16,7 +16,7 @@ The system enforces strict unidirectional dependencies: infrastructure adapts to
 
 ### Flow 
 
-![Flow](https://github.com/user-attachments/assets/2de28a8d-1cfc-4b51-9328-227b4fa0192f)
+![Flow](https://github.com/user-attachments/assets/1c76e9c3-6aae-4114-a29f-cc54dc11bc4e)
 
 ---
 
