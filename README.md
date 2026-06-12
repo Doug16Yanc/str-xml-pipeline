@@ -10,13 +10,13 @@ Built on **Hexagonal Architecture (Ports & Adapters)** with a stateless, cookie-
 
 The system enforces strict unidirectional dependencies: infrastructure adapts to domain contracts, never the inverse. The business domain is completely isolated from framework behavior, database protocols, and external clients.
 
-### Architecture
+### First Mile
 
-![Architecture](https://github.com/user-attachments/assets/2de28a8d-1cfc-4b51-9328-227b4fa0192f)
+![First mile](https://github.com/user-attachments/assets/247d77f7-a9ca-4333-b84c-6be72dcfdd18)
 
-### Flow 
+### Second Mile 
 
-![Flow](https://github.com/user-attachments/assets/1c76e9c3-6aae-4114-a29f-cc54dc11bc4e)
+![Second mile](https://github.com/user-attachments/assets/1c76e9c3-6aae-4114-a29f-cc54dc11bc4e)
 
 ---
 
