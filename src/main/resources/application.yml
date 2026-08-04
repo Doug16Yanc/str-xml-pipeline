@@ -102,6 +102,9 @@ kafka:
     settlement-return:
       name: ${KAFKA_TOPIC_SETTLEMENT_RETURN:str.settlement.return}
       partitions: ${KAFKA_TOPIC_SETTLEMENT_RETURN_PARTITIONS:4}
+    batch-compensation:
+      name: ${KAFKA_TOPIC_BATCH_COMPENSATION:str.batch.compensation}
+      partitions: ${KAFKA_TOPIC_BATCH_COMPENSATION_PARTITIONS:12}
 
 aws:
   s3:

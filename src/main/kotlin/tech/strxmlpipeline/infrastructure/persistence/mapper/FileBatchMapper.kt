@@ -15,7 +15,8 @@ fun FileBatchEntity.toFileBatchDomain(): FileBatch {
             status        = this.status,
             participant   = this.participant.toParticipantDomain(),
             createdAt     = this.generatedAt,
-            updatedAt     = this.sentAt ?: this.generatedAt
+            updatedAt     = this.sentAt ?: this.generatedAt,
+            version       = this.version,
         )
     }
 
@@ -28,7 +29,8 @@ fun FileBatchEntity.toFileBatchDomain(): FileBatch {
         status              = this.status,
         participant         = this.participant.toParticipantDomain(),
         createdAt           = this.generatedAt,
-        updatedAt           = this.sentAt ?: this.generatedAt
+        updatedAt           = this.sentAt ?: this.generatedAt,
+        version             = this.version,
     )
 }
 

@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 import tech.strxmlpipeline.domain.enum.BatchStatus
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -57,6 +58,15 @@ class FileBatchEntity(
 
     @Column(name = "sent_at")
     var sentAt: OffsetDateTime? = null,
+
+    /**
+     * Optimistic-lock version. Doubles as the saga's coordination/audit trail
+     * for the Third Mile compensation flow — no orchestrator component
+     * needed, this + updated_at is enough to reconstruct the batch's history.
+     */
+    @Version
+    @Column(name = "version")
+    var version: Long = 0,
 ) {
     @OneToMany(mappedBy = "batch", fetch = FetchType.LAZY)
     val orders: MutableList<SettlementOrderEntity> = mutableListOf()

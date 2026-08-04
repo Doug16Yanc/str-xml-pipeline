@@ -32,12 +32,21 @@ data class SettlementOrder(
     }
     fun batch(): SettlementOrder = transition(OrderStatus.BATCHED)
     fun emit(): SettlementOrder = transition(OrderStatus.EMITTED)
-    fun confirm(): SettlementOrder = transition(OrderStatus.CONFIRMED)
+    fun accept(): SettlementOrder = transition(OrderStatus.ACCEPTED)
     fun reject(): SettlementOrder = transition(OrderStatus.REJECTED)
     fun rejectCutoff(): SettlementOrder = transition(OrderStatus.REJECTED_CUTOFF)
 
     fun associateWithBatch(batchId: UUID): SettlementOrder {
         return copy(batchId = batchId, updatedAt = OffsetDateTime.now())
+    }
+
+    /**
+     * Compensation saga step: reverts a REJECTED order back to PENDING and
+     * clears its batch association, so it's picked up again by
+     * [findPendingForWindow] on the next SettlementWindow cycle.
+     */
+    fun releaseForCompensation(): SettlementOrder {
+        return transition(OrderStatus.PENDING).copy(batchId = null, updatedAt = OffsetDateTime.now())
     }
 
     private fun transition(next: OrderStatus): SettlementOrder {

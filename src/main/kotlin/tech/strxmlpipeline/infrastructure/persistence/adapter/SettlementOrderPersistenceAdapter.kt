@@ -91,6 +91,16 @@ class SettlementOrderPersistenceAdapter(
         return orders
     }
 
+    override fun releaseForCompensation(orders: List<SettlementOrder>): List<SettlementOrder> {
+        if (orders.isEmpty()) return emptyList()
+
+        orderJpaRepository.releaseForCompensationForIds(
+            ids = orders.map { it.id },
+            now = OffsetDateTime.now(),
+        )
+        return orders
+    }
+
     override fun bulkInsert(orders: List<SettlementOrder>, batchId: UUID) {
         copyBulkAdapter.bulkInsertUsingCopy(orders, batchId)
     }

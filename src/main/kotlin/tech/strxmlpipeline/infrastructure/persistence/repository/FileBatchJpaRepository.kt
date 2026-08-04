@@ -34,7 +34,9 @@ interface FileBatchJpaRepository : JpaRepository<FileBatchEntity, UUID> {
     AND b.referenceDate = :date
     AND b.participant.id = :participantId
     AND b.status NOT IN (
-        tech.strxmlpipeline.domain.enum.BatchStatus.REJECTED
+        tech.strxmlpipeline.domain.enum.BatchStatus.TRANSMISSION_REJECTED,
+        tech.strxmlpipeline.domain.enum.BatchStatus.COMPENSATING,
+        tech.strxmlpipeline.domain.enum.BatchStatus.COMPENSATED
     )
 """)
     fun existsActiveBatchForWindowDateAndParticipant(

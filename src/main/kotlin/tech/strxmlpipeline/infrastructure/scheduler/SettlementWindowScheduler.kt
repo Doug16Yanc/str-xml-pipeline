@@ -56,7 +56,7 @@ class SettlementWindowScheduler(
     fun strD1Window1400() = trigger("STR-D1-14h00")
 
     // STR D0 — same-day settlement, 17h00 cutoff
-    @Scheduled(cron = "0 00 17 * * MON-FRI", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 40 16 * * MON-FRI", zone = "America/Sao_Paulo")
     @SchedulerLock(
         name = "strD0Window1700",
         lockAtMostFor = "PT4M",
@@ -65,8 +65,8 @@ class SettlementWindowScheduler(
     fun strD0Window1700() = trigger("STR-D0-17h00")
 
     // For tests
-    @Scheduled(fixedDelay = 30000)
-    fun strD0Window1900Test() = trigger("STR-D0-19h00")
+  /*  @Scheduled(fixedDelay = 30000)
+    fun strD0Window1900Test() = trigger("STR-D0-19h00") */
 
     private fun trigger(windowKey: String) {
         log.info("Scheduler triggering assembly for window [{}]", windowKey)

@@ -65,4 +65,19 @@ interface SettlementOrderJpaRepository : JpaRepository<SettlementOrderEntity, UU
     )
 
     fun findByBatchId(batchId: UUID): List<SettlementOrderEntity>
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE SettlementOrderEntity o 
+        SET o.status = tech.strxmlpipeline.domain.enum.OrderStatus.PENDING,
+            o.batch = NULL,
+            o.version = o.version + 1,
+            o.updatedAt = :now
+        WHERE o.id IN :ids AND 
+        o.status = tech.strxmlpipeline.domain.enum.OrderStatus.REJECTED
+    """)
+    fun releaseForCompensationForIds(
+        @Param("ids") ids: List<UUID>,
+        @Param("now") now: OffsetDateTime
+    ): Int
 }

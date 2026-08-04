@@ -17,6 +17,12 @@ data class FileBatch(
     val participant: Participant,
     val createdAt: OffsetDateTime = OffsetDateTime.now(),
     val updatedAt: OffsetDateTime = OffsetDateTime.now(),
+    /**
+     * Optimistic-lock version. Doubles as the saga's coordination/audit trail
+     * (Third Mile) — no orchestrator needed, each state transition bumps
+     * this and `updatedAt`, and choreography consumers react to `status` alone.
+     */
+    val version: Long = 0,
 ) {
     companion object {
         fun fromPersistence(
@@ -28,6 +34,7 @@ data class FileBatch(
             participant: Participant,
             createdAt: OffsetDateTime,
             updatedAt: OffsetDateTime,
+            version: Long = 0,
         ): FileBatch = FileBatch(
             id            = id,
             window        = window,
@@ -38,6 +45,7 @@ data class FileBatch(
             participant   = participant,
             createdAt     = createdAt,
             updatedAt     = updatedAt,
+            version       = version,
         )
     }
 
@@ -56,8 +64,21 @@ data class FileBatch(
     val totalAmount: BigDecimal get() = orders.sumOf { it.amount }
 
     fun emit(): FileBatch = transition(BatchStatus.EMITTED)
-    fun confirm(): FileBatch = transition(BatchStatus.CONFIRMED)
-    fun reject(): FileBatch = transition(BatchStatus.REJECTED)
+
+    /** XML successfully handed off to the BACEN/STR API — Camada de Transmissão. */
+    fun transmit(): FileBatch = transition(BatchStatus.TRANSMITTED)
+
+    /** BACEN/STR accepted the batch. Terminal. */
+    fun accept(): FileBatch = transition(BatchStatus.ACCEPTED)
+
+    /** BACEN/STR rejected the batch — this is what kicks off the compensation saga. */
+    fun rejectTransmission(): FileBatch = transition(BatchStatus.TRANSMISSION_REJECTED)
+
+    /** Compensating consumer has started reverting this batch's orders. */
+    fun startCompensation(): FileBatch = transition(BatchStatus.COMPENSATING)
+
+    /** Compensation finished — orders released back to PENDING for the next window. Terminal. */
+    fun completeCompensation(): FileBatch = transition(BatchStatus.COMPENSATED)
 
     private fun transition(newStatus: BatchStatus): FileBatch {
         check(status.canTransitionTo(newStatus)) {

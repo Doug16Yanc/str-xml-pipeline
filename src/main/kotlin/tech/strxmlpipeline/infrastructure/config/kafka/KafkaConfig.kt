@@ -30,6 +30,8 @@ class KafkaConfig(
     @Value("\${kafka.topics.batch-emission.partitions:12}")                private val emissionPartitions: Int,
     @Value("\${kafka.topics.settlement-return.name:str.settlement.return}") private val returnTopic: String,
     @Value("\${kafka.topics.settlement-return.partitions:4}")              private val returnPartitions: Int,
+    @Value("\${kafka.topics.batch-compensation.name:str.batch.compensation}") private val compensationTopic: String,
+    @Value("\${kafka.topics.batch-compensation.partitions:12}")              private val compensationPartitions: Int,
     @Value("\${kafka.consumer.group-id:str-xml-pipeline}")                 private val groupId: String,
     private val clock: Clock
 ) {
@@ -60,6 +62,20 @@ class KafkaConfig(
         .config("min.insync.replicas", "2")
         .build()
 
+    /**
+     * Compensation trigger topic (Terceira Milha). Same partitioning convention
+     * as batch-emission — window.partitioningKey as key — so compensation
+     * events for the same window stay ordered.
+     */
+    @Bean
+    fun batchCompensationTopic(): NewTopic = TopicBuilder
+        .name(compensationTopic)
+        .partitions(compensationPartitions)
+        .replicas(1)
+        .config("retention.ms", "${30L * 24 * 60 * 60 * 1000}") // 30 days — audit retention
+        .config("min.insync.replicas", "2")
+        .build()
+
     // DLT topics — created automatically by @RetryableTopic but declared explicitly
     // so retention and replica config are enforced
     @Bean
@@ -74,6 +90,14 @@ class KafkaConfig(
     fun settlementReturnDlt(): NewTopic = TopicBuilder
         .name("$returnTopic.DLT")
         .partitions(returnPartitions)
+        .replicas(1)
+        .config("retention.ms", "${90L * 24 * 60 * 60 * 1000}")
+        .build()
+
+    @Bean
+    fun batchCompensationDlt(): NewTopic = TopicBuilder
+        .name("$compensationTopic.DLT")
+        .partitions(compensationPartitions)
         .replicas(1)
         .config("retention.ms", "${90L * 24 * 60 * 60 * 1000}")
         .build()

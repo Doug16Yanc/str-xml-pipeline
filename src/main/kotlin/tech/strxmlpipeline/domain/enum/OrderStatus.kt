@@ -4,16 +4,18 @@ enum class OrderStatus {
     PENDING,
     BATCHED,
     EMITTED,
-    CONFIRMED,
+    ACCEPTED,
     REJECTED,
     REJECTED_CUTOFF;
 
     fun canTransitionTo(next: OrderStatus): Boolean = when (this) {
         PENDING -> next == BATCHED || next == REJECTED_CUTOFF
         BATCHED -> next == EMITTED || next == REJECTED_CUTOFF
-        EMITTED -> next == CONFIRMED || next == REJECTED
-        CONFIRMED -> false
-        REJECTED -> false
+        EMITTED -> next == ACCEPTED || next == REJECTED
+        ACCEPTED -> false
+        // Compensation saga: a rejected order is reverted back to PENDING
+        // (batchId cleared) so it re-enters assembly for the next SettlementWindow cycle.
+        REJECTED -> next == PENDING
         REJECTED_CUTOFF -> false
     }
 }

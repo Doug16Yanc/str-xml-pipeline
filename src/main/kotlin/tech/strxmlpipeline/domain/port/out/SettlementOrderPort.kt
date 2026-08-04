@@ -15,6 +15,11 @@ interface SettlementOrderPort {
     fun findPendingForWindow(window: SettlementWindow, date: LocalDate, ispb: Ispb): List<SettlementOrder>    fun updateStatus(order: SettlementOrder): SettlementOrder
     fun updateStatusBatch(orders: List<SettlementOrder>): List<SettlementOrder>
     fun updateStatusOnly(ordes: List<SettlementOrder>): List<SettlementOrder>
+    /**
+     * Compensation saga: reverts orders to PENDING and clears their batch
+     * association (unlike [updateStatusBatch], which sets it).
+     */
+    fun releaseForCompensation(orders: List<SettlementOrder>): List<SettlementOrder>
     fun findByBatchId(batchId: UUID): List<SettlementOrder>
     fun bulkInsert(orders: List<SettlementOrder>, batchId: UUID)
 }

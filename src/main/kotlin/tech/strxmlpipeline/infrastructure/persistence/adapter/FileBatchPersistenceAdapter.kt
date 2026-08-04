@@ -41,7 +41,7 @@ class FileBatchPersistenceAdapter(
 
         existing.status = BatchStatus.valueOf(batch.status.name)
 
-        return batchJpaRepository.save(existing).toFileBatchDomain()
+        return batchJpaRepository.saveAndFlush(existing).toFileBatchDomain()
     }
 
     override fun existsActiveBatch(window: SettlementWindow, date: LocalDate, participantId: UUID): Boolean {
