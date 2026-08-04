@@ -88,8 +88,8 @@ class SecurityConfig(
     fun corsConfigurationSource(): CorsConfigurationSource {
         val config = CorsConfiguration().apply {
             allowedOrigins = listOf(
-                "https://rumintrack.tech",
-                "https://app.rumintrack.tech",
+                "https://str-xml-pipeline.tech",
+                "https://app.str-xml-pipeline.tech",
             )
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf("Authorization", "Content-Type", "X-Requested-With")
