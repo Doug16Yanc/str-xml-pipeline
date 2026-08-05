@@ -18,6 +18,10 @@ The system enforces strict unidirectional dependencies: infrastructure adapts to
 
 ![Second mile](https://github.com/user-attachments/assets/1c76e9c3-6aae-4114-a29f-cc54dc11bc4e)
 
+### Third Mile
+
+![Third mile](https://github.com/user-attachments/assets/1cb1dae3-5b11-4e14-a2bf-b5c7a4b8a3f6)
+
 ---
 
 ## Stack
