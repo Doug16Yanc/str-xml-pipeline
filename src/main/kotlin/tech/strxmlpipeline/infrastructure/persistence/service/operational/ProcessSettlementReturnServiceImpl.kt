@@ -42,7 +42,7 @@ class ProcessSettlementReturnServiceImpl(
         returnPort.save(response)
 
         // EMITTED -> TRANSMITTED is implicit here until a dedicated transmission
-        // consumer exists (Camada de Transmissão) — receiving an async return proves
+        // consumer exists (Transmission Layer) — receiving an async return proves
         // the XML did reach BACEN/STR, so we fold the two transitions into one call.
         val transmitted = batch.transmit()
         val updatedBatch = if (response.isAccepted) transmitted.accept() else transmitted.rejectTransmission()
