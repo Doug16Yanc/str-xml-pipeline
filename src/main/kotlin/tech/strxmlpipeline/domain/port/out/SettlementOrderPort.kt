@@ -16,10 +16,12 @@ interface SettlementOrderPort {
     fun updateStatusBatch(orders: List<SettlementOrder>): List<SettlementOrder>
     fun updateStatusOnly(ordes: List<SettlementOrder>): List<SettlementOrder>
     /**
-     * Compensation saga: reverts orders to PENDING and clears their batch
-     * association (unlike [updateStatusBatch], which sets it).
+     * Compensation saga: reverts orders to PENDING, clears their batch
+     * association, and re-dates them to [newSettlementDate] so they're
+     * picked up by the next assembly cycle instead of being orphaned on
+     * their original (now-past) settlement date.
      */
-    fun releaseForCompensation(orders: List<SettlementOrder>): List<SettlementOrder>
+    fun releaseForCompensation(orders: List<SettlementOrder>, newSettlementDate: LocalDate): List<SettlementOrder>
     fun findByBatchId(batchId: UUID): List<SettlementOrder>
     fun bulkInsert(orders: List<SettlementOrder>, batchId: UUID)
 }

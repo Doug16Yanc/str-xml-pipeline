@@ -96,6 +96,10 @@ kafka:
   consumer:
     group-id: str-settlement-emission-group
   topics:
+    # 1 for the single-broker docker-compose cluster used locally/dev. In a real
+    # multi-broker Kafka cluster, raise this (e.g. 2) via KAFKA_TOPICS_MIN_INSYNC_REPLICAS
+    # for durability — replicas(1) here would need to become replicas(N) too.
+    min-insync-replicas: ${KAFKA_TOPICS_MIN_INSYNC_REPLICAS:1}
     batch-emission:
       name: ${KAFKA_TOPIC_BATCH_EMISSION:str.batch.emission}
       partitions: ${KAFKA_TOPIC_BATCH_EMISSION_PARTITIONS:12}

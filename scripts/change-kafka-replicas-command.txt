@@ -1,0 +1,16 @@
+docker exec -i str_kafka kafka-configs --bootstrap-server localhost:9092 \
+  --alter --entity-type topics --entity-name str.batch.emission \
+  --add-config min.insync.replicas=1
+
+docker exec -i str_kafka kafka-configs --bootstrap-server localhost:9092 \
+  --alter --entity-type topics --entity-name str.settlement.return \
+  --add-config min.insync.replicas=1
+
+docker exec -i str_kafka kafka-configs --bootstrap-server localhost:9092 \
+  --alter --entity-type topics --entity-name str.batch.compensation \
+  --add-config min.insync.replicas=1
+
+// Confirms
+
+docker exec -i str_kafka kafka-configs --bootstrap-server localhost:9092 \
+  --describe --entity-type topics --entity-name str.batch.emission

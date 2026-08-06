@@ -6,6 +6,10 @@
 -- Existing rows: CONFIRMED -> ACCEPTED, REJECTED -> TRANSMISSION_REJECTED.
 -- (No non-terminal EMITTED-only rows need remapping — EMITTED stays EMITTED.)
 
+-- file_batch.status was VARCHAR(20) — 'TRANSMISSION_REJECTED' is 22 chars,
+-- doesn't fit. Widen first, matching window_code's VARCHAR(30) convention.
+ALTER TABLE file_batch ALTER COLUMN status TYPE VARCHAR(30);
+
 UPDATE file_batch SET status = 'ACCEPTED'              WHERE status = 'CONFIRMED';
 UPDATE file_batch SET status = 'TRANSMISSION_REJECTED' WHERE status = 'REJECTED';
 

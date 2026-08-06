@@ -33,6 +33,11 @@ class KafkaConfig(
     @Value("\${kafka.topics.batch-compensation.name:str.batch.compensation}") private val compensationTopic: String,
     @Value("\${kafka.topics.batch-compensation.partitions:12}")              private val compensationPartitions: Int,
     @Value("\${kafka.consumer.group-id:str-xml-pipeline}")                 private val groupId: String,
+    // "2" is a production-grade durability setting (survives one broker loss under
+    // acks=all). It's mathematically impossible on a single-broker local cluster —
+    // there can never be 2 in-sync replicas when there's only 1 replica total —
+    // so local/dev profiles must override this to 1. See application-local.yml.
+    @Value("\${kafka.topics.min-insync-replicas:1}")                      private val minInsyncReplicas: String,
     private val clock: Clock
 ) {
 
@@ -50,7 +55,7 @@ class KafkaConfig(
         .partitions(emissionPartitions)
         .replicas(1)
         .config("retention.ms", "${7 * 24 * 60 * 60 * 1000}") // 7 days
-        .config("min.insync.replicas", "2")
+        .config("min.insync.replicas", minInsyncReplicas)
         .build()
 
     @Bean
@@ -59,7 +64,7 @@ class KafkaConfig(
         .partitions(returnPartitions)
         .replicas(1)
         .config("retention.ms", "${30L * 24 * 60 * 60 * 1000}") // 30 days — audit retention
-        .config("min.insync.replicas", "2")
+        .config("min.insync.replicas", minInsyncReplicas)
         .build()
 
     /**
@@ -73,7 +78,7 @@ class KafkaConfig(
         .partitions(compensationPartitions)
         .replicas(1)
         .config("retention.ms", "${30L * 24 * 60 * 60 * 1000}") // 30 days — audit retention
-        .config("min.insync.replicas", "2")
+        .config("min.insync.replicas", minInsyncReplicas)
         .build()
 
     // DLT topics — created automatically by @RetryableTopic but declared explicitly
@@ -173,4 +178,3 @@ class KafkaConfig(
         }
     }
 }
-

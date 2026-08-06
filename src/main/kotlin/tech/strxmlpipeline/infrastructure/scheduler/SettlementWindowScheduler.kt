@@ -65,8 +65,8 @@ class SettlementWindowScheduler(
     fun strD0Window1700() = trigger("STR-D0-17h00")
 
     // For tests
-  /*  @Scheduled(fixedDelay = 30000)
-    fun strD0Window1900Test() = trigger("STR-D0-19h00") */
+     @Scheduled(fixedDelay = 30000)
+    fun strTestWindow() = trigger("STR-TEST-23h59")
 
     private fun trigger(windowKey: String) {
         log.info("Scheduler triggering assembly for window [{}]", windowKey)

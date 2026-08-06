@@ -25,6 +25,36 @@ data class FileBatch(
     val version: Long = 0,
 ) {
     companion object {
+        /**
+         * Primeira Milha — assembles a brand-new batch from orders that were
+         * just moved to BATCHED. This is the ONLY point in the batch's
+         * lifecycle where "all orders are BATCHED" is actually true, so the
+         * invariant is enforced here instead of in `init`, which also runs
+         * every time this class is reconstituted from persistence with its
+         * orders eagerly loaded (see FileBatchPersistenceAdapter.findByIdWithOrders)
+         * — at that point the orders have long since moved past BATCHED
+         * (EMITTED, REJECTED, etc.), and re-checking a creation-time rule
+         * against reconstituted state breaks the Terceira Milha flow.
+         */
+        fun assemble(
+            window: SettlementWindow,
+            referenceDate: LocalDate,
+            orders: List<SettlementOrder>,
+            participant: Participant,
+        ): FileBatch {
+            require(orders.isNotEmpty()) { "Cannot assemble a FileBatch with no orders" }
+            require(orders.all { it.status == OrderStatus.BATCHED }) {
+                "All orders must be in BATCHED status when assembled into a FileBatch"
+            }
+            return FileBatch(
+                window        = window,
+                referenceDate = referenceDate,
+                orders        = orders,
+                status        = BatchStatus.PENDING,
+                participant   = participant,
+            )
+        }
+
         fun fromPersistence(
             id: UUID,
             window: SettlementWindow,
@@ -47,17 +77,6 @@ data class FileBatch(
             updatedAt     = updatedAt,
             version       = version,
         )
-    }
-
-    init {
-        if (orders.isNotEmpty()) {
-            require(orders.all { it.status == OrderStatus.BATCHED }) {
-                "All orders must be in BATCHED status when assembled into a FileBatch"
-            }
-        }
-        require(orders.all { it.status == OrderStatus.BATCHED }) {
-            "All orders must be in BATCHED status when assembled into a FileBatch"
-        }
     }
 
     val totalOrders: Int get() = totalOrdersOverride ?: orders.size

@@ -9,10 +9,12 @@ import tech.strxmlpipeline.domain.enum.OrderStatus
 import tech.strxmlpipeline.domain.port.`in`.CompensateBatchUseCase
 import tech.strxmlpipeline.domain.port.out.FileBatchPort
 import tech.strxmlpipeline.domain.port.out.SettlementOrderPort
+import java.time.Clock
+import java.time.LocalDate
 import java.util.UUID
 
 /**
- * Choreographed compensation step of the Terceira Milha saga. No orchestrator —
+ * Choreographed compensation step of the Third Mile saga. No orchestrator —
  * this service only reacts to a single batchId handed to it by the
  * CompensatingConsumer and moves that one batch through
  * TRANSMISSION_REJECTED -> COMPENSATING -> COMPENSATED.
@@ -29,6 +31,7 @@ import java.util.UUID
 class CompensateBatchServiceImpl(
     private val batchPort: FileBatchPort,
     private val orderPort: SettlementOrderPort,
+    private val clock: Clock,
 ) : CompensateBatchUseCase {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -74,11 +77,17 @@ class CompensateBatchServiceImpl(
                 batchId,
             )
         } else {
-            val released = rejectedOrders.map { it.releaseForCompensation() }
-            orderPort.releaseForCompensation(released)
+            // Simple rule for now: released orders re-enter the pool dated "today"
+            // (per the injected Clock), not a real next-business-day calculation —
+            // there's no BusinessCalendarPort yet. If today's window already closed,
+            // the existing cutoff-rejection path in ParticipantBatchProcessor picks
+            // it up on the following cycle, same as any other late PENDING order.
+            val nextSettlementDate = LocalDate.now(clock)
+            val released = rejectedOrders.map { it.releaseForCompensation(nextSettlementDate) }
+            orderPort.releaseForCompensation(released, nextSettlementDate)
             log.info(
-                "Released {} order(s) back to PENDING for batch [{}] — next SettlementWindow cycle picks them up",
-                released.size, batchId,
+                "Released {} order(s) back to PENDING (re-dated to [{}]) for batch [{}] — next SettlementWindow cycle picks them up",
+                released.size, nextSettlementDate, batchId,
             )
         }
 

@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import java.time.Clock
+import java.time.ZoneId
 
 @Configuration
 class AppConfig {
@@ -19,9 +20,18 @@ class AppConfig {
     /**
      * Single Clock bean — injected wherever time is needed.
      * Tests override with Clock.fixed(...) for deterministic cutoff validation.
+     *
+     * Pinned to America/Sao_Paulo (BRT, no DST) instead of
+     * Clock.systemDefaultZone(): this is a BACEN/STR settlement pipeline, so
+     * "today" and cutoff windows must follow Brazil's business calendar
+     * regardless of what timezone the JVM happens to be running in.
+     * systemDefaultZone() would silently follow the host/container OS — fine
+     * when running locally on a BRT machine, wrong (and only wrong for the
+     * ~3h UTC/BRT gap around midnight) if ever deployed in a UTC container
+     * without an explicit TZ override.
      */
     @Bean
-    fun clock(): Clock = Clock.systemDefaultZone()
+    fun clock(): Clock = Clock.system(ZoneId.of("America/Sao_Paulo"))
 
     /**
      * Distributed scheduler lock.

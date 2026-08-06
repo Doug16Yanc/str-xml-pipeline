@@ -91,11 +91,12 @@ class SettlementOrderPersistenceAdapter(
         return orders
     }
 
-    override fun releaseForCompensation(orders: List<SettlementOrder>): List<SettlementOrder> {
+    override fun releaseForCompensation(orders: List<SettlementOrder>, newSettlementDate: LocalDate): List<SettlementOrder> {
         if (orders.isEmpty()) return emptyList()
 
         orderJpaRepository.releaseForCompensationForIds(
             ids = orders.map { it.id },
+            newSettlementDate = newSettlementDate,
             now = OffsetDateTime.now(),
         )
         return orders

@@ -53,7 +53,6 @@ class ParticipantBatchProcessor(
             window        = window,
             referenceDate = today,
             orders        = batchedOrders,
-            status        = BatchStatus.PENDING,
             participant   = participant,
         )
 
@@ -62,7 +61,6 @@ class ParticipantBatchProcessor(
         val ordersWithBatch = batchedOrders.map { it.associateWithBatch(savedBatch.id) }
         orderPort.updateStatusBatch(ordersWithBatch)
 
-        // Como o método termina aqui, o commit acontece IMEDIATAMENTE e o Kafka é disparado
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             TransactionSynchronizationManager.registerSynchronization(object : TransactionSynchronization {
                 override fun afterCommit() {

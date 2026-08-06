@@ -45,8 +45,12 @@ data class SettlementOrder(
      * clears its batch association, so it's picked up again by
      * [findPendingForWindow] on the next SettlementWindow cycle.
      */
-    fun releaseForCompensation(): SettlementOrder {
-        return transition(OrderStatus.PENDING).copy(batchId = null, updatedAt = OffsetDateTime.now())
+    fun releaseForCompensation(newSettlementDate: LocalDate): SettlementOrder {
+        return transition(OrderStatus.PENDING).copy(
+            batchId        = null,
+            settlementDate = newSettlementDate,
+            updatedAt      = OffsetDateTime.now(),
+        )
     }
 
     private fun transition(next: OrderStatus): SettlementOrder {

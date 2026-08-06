@@ -43,7 +43,7 @@ class FileBatchEntity(
     @Column(name = "reference_date", nullable = false, updatable = false)
     val referenceDate: LocalDate,
 
-    @Column(name = "status", length = 20, nullable = false)
+    @Column(name = "status", length = 30, nullable = false)
     @Enumerated(EnumType.STRING)
     var status: BatchStatus,
 

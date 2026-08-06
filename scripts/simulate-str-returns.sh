@@ -15,7 +15,7 @@
 #      trata cada linha como uma mensagem — XML multi-linha quebraria isso).
 #   3. Sorteia ACCEPTED ou REJECTED conforme --reject-rate.
 #      Se REJECTED, sorteia também um RejectionReason.code válido.
-#   4. Produz tudo pro tópico via kafka-console-producer.sh dentro do
+#   4. Produz tudo pro tópico via kafka-console-producer dentro do
 #      container str_kafka.
 #
 # Uso:
@@ -28,7 +28,7 @@
 # Pré-requisitos:
 #   - docker compose já rodando (postgres, kafka, app)
 #   - psql instalado no container str_postgres (padrão na imagem postgres:16-alpine)
-#   - kafka-console-producer.sh disponível no container str_kafka (padrão na imagem cp-kafka)
+#   - kafka-console-producer disponível no container str_kafka (padrão na imagem cp-kafka)
 
 set -euo pipefail
 
@@ -108,7 +108,7 @@ while IFS= read -r BATCH_ID; do
   echo "[$I/$TOTAL] batchId=$BATCH_ID -> $LABEL"
 
   echo "$XML" | docker exec -i "$KAFKA_CONTAINER" \
-    kafka-console-producer.sh \
+    kafka-console-producer \
     --bootstrap-server "$KAFKA_INTERNAL_BOOTSTRAP" \
     --topic "$KAFKA_TOPIC" \
     > /dev/null

@@ -71,6 +71,7 @@ interface SettlementOrderJpaRepository : JpaRepository<SettlementOrderEntity, UU
         UPDATE SettlementOrderEntity o 
         SET o.status = tech.strxmlpipeline.domain.enum.OrderStatus.PENDING,
             o.batch = NULL,
+            o.settlementDate = :newSettlementDate,
             o.version = o.version + 1,
             o.updatedAt = :now
         WHERE o.id IN :ids AND 
@@ -78,6 +79,7 @@ interface SettlementOrderJpaRepository : JpaRepository<SettlementOrderEntity, UU
     """)
     fun releaseForCompensationForIds(
         @Param("ids") ids: List<UUID>,
+        @Param("newSettlementDate") newSettlementDate: LocalDate,
         @Param("now") now: OffsetDateTime
     ): Int
 }
