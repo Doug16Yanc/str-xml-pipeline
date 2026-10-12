@@ -189,8 +189,8 @@ tech.strxmlpipeline
 ### Prerequisites
 
 - Docker and Docker Compose V2
-- Java 25 (Eclipse Temurin recommended)
-- Gradle 8+
+- Java 21 (Eclipse Temurin recommended)
+- Maven
 
 ### Environment Setup
 
